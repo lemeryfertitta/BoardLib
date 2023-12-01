@@ -4,7 +4,7 @@ Utilities for interacting with (undocumented) climbing board APIs. Currently, th
 
 ## Installation
 
-`pip install boardlib`
+`python3 -m pip install boardlib`
 
 ## Usage
 
