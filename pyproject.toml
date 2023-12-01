@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "boardlib"
+version = "0.0.1"
+authors = [{ name = "Luke Emery-Fertitta", email = "lemeryfertitta@gmail.com" }]
+description = "Utilities for interacting with climbing board APIs"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = ["bs4", "requests"]
+
+[project.scripts]
+boardlib = "boardlib.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/lemeryfertitta/BoardLib"
+Issues = "https://github.com/lemeryfertitta/BoardLib/issues"
