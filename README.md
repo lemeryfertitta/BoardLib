@@ -1,12 +1,12 @@
-# BoardLib
+# BoardLib 🧗‍♀️
 
 Utilities for interacting with (undocumented) climbing board APIs. Currently, the primary use case for this library is to retreive your logbook entries across multiple climbing boards in a unified format. There are also some APIs which could also be used for retrieving climb data, rankings, etc. Contributions are welcome for filling out additional API calls and use cases.
 
-## Installation
+## Installation 🦺
 
 `python3 -m pip install boardlib`
 
-## Usage
+## Usage ⌨️
 
 To download your logbook entries for a given board:
 
@@ -34,10 +34,10 @@ moon2017,40,MOUNTAIN GOAT HARD,2021-07-13,V5,1
 
 See `boardlib --help` for a full list of supported board names and feature flags.
 
-## Supported Boards
+## Supported Boards 🛹
 
 Currently all [Aurora Climbing](https://auroraclimbing.com/) based boards (Kilter, Tension, etc.) and all variations of the [Moonboard](https://moonboard.com/) should be supported.
 
-## Bugs and Feature Requests
+## Bugs 🐞 and Feature Requests 🗒️
 
 Please create an issue in the [issue tracker](https://github.com/lemeryfertitta/BoardLib/issues) to report bugs or request additional features. Contributions are welcome and appreciated.
