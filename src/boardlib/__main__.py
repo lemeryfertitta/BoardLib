@@ -1,7 +1,7 @@
+import os
 import argparse
 import csv
 import getpass
-import pyperclip
 import sys
 
 import boardlib.api.aurora
@@ -33,9 +33,8 @@ def logbook_entries(board, username, password, grade_type="font"):
         raise ValueError(f"Unknown board {board}")
 
 
-def write_entries(output_file_path, entries, no_headers=False):
-    with open(output_file_path, mode='w', newline='', encoding='utf-8') as output_file:
-        writer = csv.DictWriter(output_file, LOGBOOK_FIELDS)
+def write_entries(output_file, entries, no_headers=False):
+    writer = csv.DictWriter(output_file, LOGBOOK_FIELDS)
     if not no_headers:
         writer.writeheader()
 
@@ -65,16 +64,18 @@ def main():
         required=False,
     )
     args = parser.parse_args()
-
-    password = pyperclip.paste()
-    password = getpass.getpass("Password: ")
+    env_var = f"{args.board.upper()}_PASSWORD"
+    password = os.environ.get(env_var)
+    if not password:
+        password = getpass.getpass("Password: ")
     entries = logbook_entries(args.board, args.username, password, args.grade_type)
 
     if args.output:
-        write_entries(args.output, entries, args.no_headers)
+        with open(args.output, "w", encoding='utf-8') as output_file:
+            write_entries(output_file, entries, args.no_headers)
     else:
-        with open(sys.stdout.fileno(), mode='w', encoding='utf-8', newline='') as stdout_file:
-            write_entries(stdout_file, entries, args.no_headers)
+        sys.stdout.reconfigure(encoding= 'utf-8')
+        write_entries(sys.stdout, entries, args.no_headers)
 
 
 if __name__ == "__main__":
