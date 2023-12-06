@@ -205,3 +205,47 @@ class TestMoon(unittest.TestCase):
                 "tries": "1",
             },
         )
+
+    def test_get_map_markers(self):
+        mock_session = MockSession(
+            MockResponse(
+                json_data="test",
+            )
+        )
+        self.assertEqual(
+            boardlib.api.moon.get_map_markers(mock_session),
+            "test",
+        )
+
+    def test_get_map_markers_failure(self):
+        mock_session = MockSession(
+            MockResponse(status_code=requests.codes.bad_request),
+        )
+        with self.assertRaises(requests.exceptions.HTTPError):
+            boardlib.api.moon.get_map_markers(mock_session)
+
+    def test_gym_boards(self):
+        mock_session = MockSession(
+            MockResponse(
+                json_data=[
+                    {
+                        "Name": "The School Room",
+                        "Description": "The original MoonBoard in the legendary School Room. \r\n\r\nThe School Room, Sheffield is a high spec members-only training facility for intermediate to advanced climbers aged 18+ who wish to improve their strength and endurance for climbing. \r\n\r\nOpen 24/7, 7-days a week.",
+                        "Image": "/Content/Account/Users/MoonBoards/SchoolRoom.jpg",
+                        "Latitude": 53.386304,
+                        "Longitude": -1.47619,
+                        "IsCommercial": True,
+                        "IsLed": True,
+                        "LatLng": [53.386304, -1.47619],
+                    }
+                ]
+            )
+        )
+        self.assertEqual(
+            next(boardlib.api.moon.gym_boards(mock_session)),
+            {
+                "name": "The School Room",
+                "latitude": 53.386304,
+                "longitude": -1.47619,
+            },
+        )

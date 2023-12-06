@@ -75,6 +75,21 @@ def get_logbook(board, token, user_id, types="ascent"):
 
 
 def get_gyms(board):
+    """
+    :return:
+        {
+            "gyms": [
+                {
+                    'id': 373656,
+                    'username': '<username>',
+                    'name': '<name>',
+                    'latitude': 48.10135,
+                    'longitude': 11.30113
+                },
+                ...
+            ]
+        }
+    """
     response = requests.get(f"{API_HOSTS[board]}/v1/pins?types=gym")
     response.raise_for_status()
     return response.json()
@@ -191,4 +206,13 @@ def logbook_entries(board, username, password, grade_type="font"):
                 else boardlib.util.grades.FONT_TO_HUECO[font_grade]
             ),
             "tries": attempt_id if attempt_id else raw_entry["bid_count"],
+        }
+
+
+def gym_boards(board):
+    for gym in get_gyms(board)["gyms"]:
+        yield {
+            "name": gym["name"],
+            "latitude": gym["latitude"],
+            "longitude": gym["longitude"],
         }
