@@ -1,6 +1,7 @@
 import argparse
 import csv
 import getpass
+import pyperclip
 import sys
 
 import boardlib.api.aurora
@@ -65,6 +66,7 @@ def main():
     )
     args = parser.parse_args()
 
+    password = pyperclip.paste()
     password = getpass.getpass("Password: ")
     entries = logbook_entries(args.board, args.username, password, args.grade_type)
 
