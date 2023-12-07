@@ -1,9 +1,9 @@
-import os
 import argparse
 import csv
 import getpass
-import sys
 import os
+import sys
+
 import boardlib.api.aurora
 import boardlib.api.moon
 
