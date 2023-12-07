@@ -1,8 +1,9 @@
 import argparse
 import csv
 import getpass
-import sys
 import os
+import sys
+
 import boardlib.api.aurora
 import boardlib.api.moon
 
@@ -63,7 +64,7 @@ def main():
         required=False,
     )
     args = parser.parse_args()
-    
+
     env_var = f"{args.board.upper()}_PASSWORD"
     password = os.environ.get(env_var)
     if not password:
@@ -71,9 +72,10 @@ def main():
     entries = logbook_entries(args.board, args.username, password, args.grade_type)
 
     if args.output:
-        with open(args.output, "w") as output_file:
+        with open(args.output, "w", encoding='utf-8') as output_file:
             write_entries(output_file, entries, args.no_headers)
     else:
+        sys.stdout.reconfigure(encoding= 'utf-8')
         write_entries(sys.stdout, entries, args.no_headers)
 
 
