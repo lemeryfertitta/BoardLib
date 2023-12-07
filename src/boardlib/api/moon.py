@@ -159,3 +159,35 @@ def logbook_entries(board, username, password, grade_type="font"):
             ),
             "tries": ATTEMPTS_TO_COUNT[entry["NumberOfTries"]],
         }
+
+
+def get_map_markers(session):
+    """
+    :return: list of board objects. For example:
+        {
+            "Name": "The School Room",
+            "Description": "The original MoonBoard in the legendary School Room. \r\n\r\nThe School Room, Sheffield is a high spec members-only training facility for intermediate to advanced climbers aged 18+ who wish to improve their strength and endurance for climbing. \r\n\r\nOpen 24/7, 7-days a week.",
+            "Image": "/Content/Account/Users/MoonBoards/SchoolRoom.jpg",
+            "Latitude": 53.386304,
+            "Longitude": -1.47619,
+            "IsCommercial": true,
+            "IsLed": true,
+            "LatLng": [53.386304, -1.47619]
+        }
+    """
+    response = session.get(
+        f"{HOST}/MoonBoard/GetMapMarkers",
+        headers={"X-Requested-With": "XMLHttpRequest"},
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def gym_boards(session):
+    for marker in get_map_markers(session):
+        if marker["IsCommercial"]:
+            yield {
+                "name": marker["Name"],
+                "latitude": marker["Latitude"],
+                "longitude": marker["Longitude"],
+            }

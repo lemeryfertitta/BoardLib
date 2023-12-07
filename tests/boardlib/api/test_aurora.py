@@ -178,6 +178,25 @@ class TestAurora(unittest.TestCase):
             },
         )
 
+    @unittest.mock.patch(
+        "boardlib.api.aurora.get_gyms",
+        side_effect=lambda *args, **kwargs: {
+                "gyms": [
+                    {'id': 1575, 'username': 'testuser', 'name': 'testgym', 'latitude': 51.43236, 'longitude': 6.7432}
+                ]
+            
+        },
+    )
+    def test_gym_boards(self, mock_get_gyms):
+        self.assertEqual(
+            next(boardlib.api.aurora.gym_boards("aurora")),
+            {
+                "name": "testgym",
+                "latitude": 51.43236,
+                "longitude": 6.7432,
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
