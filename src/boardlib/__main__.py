@@ -2,7 +2,7 @@ import argparse
 import csv
 import getpass
 import sys
-
+import os
 import boardlib.api.aurora
 import boardlib.api.moon
 
@@ -63,8 +63,11 @@ def main():
         required=False,
     )
     args = parser.parse_args()
-
-    password = getpass.getpass("Password: ")
+    
+    env_var = f"{args.board.upper()}_PASSWORD"
+    password = os.environ.get(env_var)
+    if not password:
+        password = getpass.getpass("Password: ")
     entries = logbook_entries(args.board, args.username, password, args.grade_type)
 
     if args.output:
