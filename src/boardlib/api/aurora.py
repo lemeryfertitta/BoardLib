@@ -48,6 +48,35 @@ GRADES = {
     34: "9A",
 }
 
+SHARED_TABLES = [
+    "products",
+    "product_sizes",
+    "holes",
+    "leds",
+    "products_angles",
+    "layouts",
+    "product_sizes_layouts_sets",
+    "placements",
+    "sets",
+    "placement_roles",
+    "climbs",
+    "climb_stats",
+    "beta_links",
+    "attempts",
+    "kits",
+]
+
+USER_TABLES = [
+    "users",
+    "walls",
+    "wall_expungements",
+    "draft_climbs",
+    "ascents",
+    "bids",
+    "tags",
+    "circuits",
+]
+
 
 def login(board, username, password):
     response = requests.post(
@@ -116,6 +145,15 @@ def get_climb_stats(board, token, climb_id, angle):
     return response.json()
 
 
+def get_climb(board, token, climb_id):
+    response = requests.get(
+        f"{API_HOSTS[board]}/v1/climbs/{climb_id}/info",
+        headers={"authorization": f"Bearer {token}"},
+        params={"angle": angle},
+    )
+    response.raise_for_status()
+
+
 def get_climb_name(board, climb_id):
     response = requests.get(
         f"{WEB_HOSTS[board]}/climbs/{climb_id}",
@@ -124,7 +162,16 @@ def get_climb_name(board, climb_id):
     return bs4.BeautifulSoup(response.text, "html.parser").find("h1").text
 
 
-def sync(board, token, user_id, tables=[], walls=[], wall_expungements=[]):
+def user_sync(
+    board,
+    token,
+    user_id,
+    tables=[],
+    walls=[],
+    wall_expungements=[],
+    shared_syncs=[],
+    user_syncs=[],
+):
     """
     :param tables: list of tables to download. The following are valid:
         "products",
@@ -153,6 +200,9 @@ def sync(board, token, user_id, tables=[], walls=[], wall_expungements=[]):
 
     :param walls: list of walls to upload
     :param wall_expungements: list of walls to delete
+    :parm shared_syncs: list of {"table_name": <table_name>, "last_synchronized_at": <last_synchronized_at>}
+        e.g. [{'table_name': 'climbs', 'last_synchronized_at': '2023-06-07 20:36:41.578003'}]
+        It looks like the largest table (climbs) won't synchronize unless it has a shared_sync with last_synchronized_at set.
     """
     response = requests.post(
         f"{API_HOSTS[board]}/v1/sync",
@@ -167,8 +217,8 @@ def sync(board, token, user_id, tables=[], walls=[], wall_expungements=[]):
             "GET": {
                 "query": {
                     "syncs": {
-                        "shared_syncs": [],
-                        "user_syncs": [],
+                        "shared_syncs": shared_syncs,
+                        "user_syncs": user_syncs,
                     },
                     "tables": tables,
                     "user_id": user_id,
@@ -180,6 +230,57 @@ def sync(board, token, user_id, tables=[], walls=[], wall_expungements=[]):
             "PUT": {
                 "walls": walls,
                 "wall_expungements": wall_expungements,
+            },
+        },
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def shared_sync(
+    board,
+    tables=[],
+    shared_syncs=[],
+):
+    """
+    Shared syncs are used to download data from the board. They are not authenticated.
+
+    :param tables: list of tables to download. The following are valid:
+        "products",
+        "product_sizes",
+        "holes",
+        "leds",
+        "products_angles",
+        "layouts",
+        "product_sizes_layouts_sets",
+        "placements",
+        "sets",
+        "placement_roles",
+        "climbs",
+        "climb_stats",
+        "beta_links",
+        "attempts",
+        "kits",
+    """
+    response = requests.post(
+        f"{API_HOSTS[board]}/v1/sync",
+        json={
+            "client": {
+                "enforces_product_passwords": 1,
+                "enforces_layout_passwords": 1,
+                "manages_power_responsibly": 1,
+                "ufd": 1,
+            },
+            "GET": {
+                "query": {
+                    "syncs": {
+                        "shared_syncs": shared_syncs,
+                    },
+                    "tables": tables,
+                    "include_multiframe_climbs": 1,
+                    "include_all_beta_links": 1,
+                    "include_null_climb_stats": 1,
+                }
             },
         },
     )
