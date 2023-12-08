@@ -15,7 +15,7 @@ To download your logbook entries for a given board:
 This outputs a CSV file with the following fields:
 
 ```json
-["board", "angle", "name", "date", "grade", "tries"]
+["board", "angle", "name", "date", "grade", "tries", "is_mirror"]
 ```
 
 For example, the command
@@ -25,10 +25,10 @@ For example, the command
 would output a file named `moon2017.csv` with the following contents:
 
 ```
-board,angle,name,date,grade,tries
-moon2017,40,C3PO,2021-07-13,V5,1
-moon2017,40,LITTLE BLACK SUBMARINE,2021-07-13,V5,2
-moon2017,40,MOUNTAIN GOAT HARD,2021-07-13,V5,1
+board,angle,name,date,grade,tries, is_mirror
+moon2017,40,C3PO,2021-07-13,V5,1, False
+moon2017,40,LITTLE BLACK SUBMARINE,2021-07-13,V5,2, False
+moon2017,40,MOUNTAIN GOAT HARD,2021-07-13,V5,1, False
 ...
 ```
 
