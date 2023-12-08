@@ -15,6 +15,7 @@ LOGBOOK_FIELDS = (
     "date",
     "grade",
     "tries",
+    "is_mirror"
 )
 
 

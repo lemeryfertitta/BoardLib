@@ -158,6 +158,7 @@ def logbook_entries(board, username, password, grade_type="font"):
                 else boardlib.util.grades.FONT_TO_HUECO[font_grade]
             ),
             "tries": ATTEMPTS_TO_COUNT[entry["NumberOfTries"]],
+            "is_mirror" : False
         }
 
 
