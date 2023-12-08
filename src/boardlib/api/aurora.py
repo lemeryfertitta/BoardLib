@@ -193,4 +193,5 @@ def logbook_entries(board, username, password, grade_type="font"):
                 else boardlib.util.grades.FONT_TO_HUECO[font_grade]
             ),
             "tries": attempt_id if attempt_id else raw_entry["bid_count"],
+            "is_mirror": raw_entry["is_mirror"]
         }
