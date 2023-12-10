@@ -49,6 +49,7 @@ def sync_shared_tables(board, database):
 
     :param board: The board to sync the database for.
     :param database: The sqlite3 database file to sync.
+    :returns: a mapping of synchronized table names to counts of inserted/updated/deleted rows.
     """
     with sqlite3.connect(database) as connection:
         result = connection.execute(
@@ -61,10 +62,14 @@ def sync_shared_tables(board, database):
         shared_sync_result = boardlib.api.aurora.shared_sync(
             board, tables=boardlib.api.aurora.SHARED_TABLES, shared_syncs=shared_syncs
         )
+        row_counts = {}
         for table_name, rows in shared_sync_result["PUT"].items():
             ROW_INSERTERS.get(table_name, insert_rows_default)(
                 connection, table_name, rows
             )
+            row_counts[table_name] = len(rows)
+
+        return row_counts
 
 
 def insert_rows_default(connection, table_name, rows):
