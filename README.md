@@ -1,6 +1,6 @@
 # BoardLib 🧗‍♀️
 
-Utilities for interacting with (undocumented) climbing board APIs. Currently, the primary use case for this library is to retreive your logbook entries across multiple climbing boards in a unified format. There are also some APIs which could also be used for retrieving climb data, rankings, etc. Contributions are welcome for filling out additional API calls and use cases.
+Utilities for interacting with (undocumented) climbing board APIs.
 
 ## Installation 🦺
 
@@ -8,9 +8,25 @@ Utilities for interacting with (undocumented) climbing board APIs. Currently, th
 
 ## Usage ⌨️
 
+### Databases 💾
+
+To download the climb database for a given board:
+
+`boardlib database <board_name> <database_path>`
+
+This will download a [sqlite](https://www.sqlite.org/index.html) database file to the given path and synchronize it with the latest available data. The database contains all of the publicly available climb data. Only the synchronization will be attempted if there is already a database at the given path,
+
+NOTE: The Moonboard is not currently supported for the database command. Contributions are welcome.
+
+#### Supported Boards 🛹
+
+All [Aurora Climbing](https://auroraclimbing.com/) based boards (Kilter, Tension, etc.).
+
+### Logbooks 📚
+
 To download your logbook entries for a given board:
 
-`boardlib <board_name> --username=<username> --output=<output_file_name>.csv --grade-type="hueco"`
+`boardlib logbook <board_name> --username=<username> --output=<output_file_name>.csv --grade-type="hueco"`
 
 This outputs a CSV file with the following fields:
 
@@ -34,7 +50,7 @@ moon2017,40,MOUNTAIN GOAT HARD,2021-07-13,V5,1, False
 
 See `boardlib --help` for a full list of supported board names and feature flags.
 
-## Supported Boards 🛹
+#### Supported Boards 🛹
 
 Currently all [Aurora Climbing](https://auroraclimbing.com/) based boards (Kilter, Tension, etc.) and all variations of the [Moonboard](https://moonboard.com/) should be supported.
 
