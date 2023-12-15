@@ -309,7 +309,7 @@ def logbook_entries(board, username, password, grade_type="font"):
                 else boardlib.util.grades.FONT_TO_HUECO[font_grade]
             ),
             "tries": attempt_id if attempt_id else raw_entry["bid_count"],
-            "is_mirror": raw_entry["is_mirror"]
+            "is_mirror": raw_entry["is_mirror"],
         }
 
 
@@ -320,3 +320,12 @@ def gym_boards(board):
             "latitude": gym["latitude"],
             "longitude": gym["longitude"],
         }
+
+
+def download_image(board, image_filename, output_filename):
+    response = requests.get(
+        f"{API_HOSTS[board]}/img/{image_filename}",
+    )
+    response.raise_for_status()
+    with open(output_filename, "wb") as output_file:
+        output_file.write(response.content)
