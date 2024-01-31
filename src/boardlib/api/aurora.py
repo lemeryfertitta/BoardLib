@@ -96,13 +96,9 @@ def explore(board, token):
     return response.json()
 
 
-def get_logbook(board, token, user_id, types="ascent"):
-    response = requests.get(
-        f"{API_HOSTS[board]}/v1/users/{user_id}/logbook?types={types}",
-        headers={"authorization": f"Bearer {token}"},
-    )
-    response.raise_for_status()
-    return response.json()["logbook"]
+def get_logbook(board, token, user_id):
+    sync_results = user_sync(board, token, user_id, tables=["ascents"])
+    return sync_results["PUT"]["ascents"]
 
 
 def get_gyms(board):
