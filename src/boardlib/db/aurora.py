@@ -27,7 +27,7 @@ def download_database(board, output_file):
     :param output_file: The file to write the database to.
     """
     response = requests.get(
-        f"https://d.apkpure.com/b/APK/com.auroraclimbing.{APP_PACKAGE_NAMES[board]}",
+        f"https://d.apkpure.net/b/APK/com.auroraclimbing.{APP_PACKAGE_NAMES[board]}",
         params={"version": "latest"},
         # Some user-agent is required, 403 if not included
         headers={
