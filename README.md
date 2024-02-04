@@ -14,7 +14,7 @@ To download the climb database for a given board:
 
 `boardlib database <board_name> <database_path>`
 
-This will download a [sqlite](https://www.sqlite.org/index.html) database file to the given path and synchronize it with the latest available data. The database contains all of the publicly available climb data. Only the synchronization will be attempted if there is already a database at the given path,
+This command will first download a [sqlite](https://www.sqlite.org/index.html) database file to the given path. After downloading, the database will then use the undocumented sync API to synchronize it with the latest available data. The database contains only the publicly available data. User data is not synchronized. If a database already exists as `database_path`, the command will skip the download step and only perform the synchronization.
 
 NOTE: The Moonboard is not currently supported for the database command. Contributions are welcome.
 
