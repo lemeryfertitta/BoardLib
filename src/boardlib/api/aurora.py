@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 import bs4
 import requests
@@ -139,15 +140,6 @@ def get_climb_stats(board, token, climb_id, angle):
     )
     response.raise_for_status()
     return response.json()
-
-
-def get_climb(board, token, climb_id):
-    response = requests.get(
-        f"{API_HOSTS[board]}/v1/climbs/{climb_id}/info",
-        headers={"authorization": f"Bearer {token}"},
-        params={"angle": angle},
-    )
-    response.raise_for_status()
 
 
 def get_climb_name(board, climb_id):
@@ -325,3 +317,82 @@ def download_image(board, image_filename, output_filename):
     response.raise_for_status()
     with open(output_filename, "wb") as output_file:
         output_file.write(response.content)
+
+
+def generate_uuid():
+    return str(uuid.uuid4()).replace("-", "")
+
+
+def save_ascent(
+    board,
+    token,
+    user_id,
+    climb_uuid,
+    angle,
+    is_mirror,
+    attempt_id,
+    bid_count,
+    quality,
+    difficulty,
+    is_benchmark,
+    comment,
+    climbed_at,
+):
+    uuid = generate_uuid()
+    response = requests.put(
+        f"{API_HOSTS[board]}/v1/ascents/{uuid}",
+        headers={"authorization": f"Bearer {token}"},
+        json={
+            "user_id": user_id,
+            "uuid": uuid,
+            "climb_uuid": climb_uuid,
+            "angle": angle,
+            "is_mirror": is_mirror,
+            "attempt_id": attempt_id,
+            "bid_count": bid_count,
+            "quality": quality,
+            "difficulty": difficulty,
+            "is_benchmark": is_benchmark,
+            "comment": comment,
+            "climbed_at": climbed_at,
+        },
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def save_climb(
+    board,
+    token,
+    layout_id,
+    setter_id,
+    name,
+    description,
+    is_draft,
+    frames_count,
+    frames_pace,
+    frames,
+    angle=None,
+):
+    uuid = generate_uuid()
+    data = {
+        "uuid": uuid,
+        "layout_id": layout_id,
+        "setter_id": setter_id,
+        "name": name,
+        "description": description,
+        "is_draft": is_draft,
+        "frames_count": frames_count,
+        "frames_pace": frames_pace,
+        "frames": frames,
+    }
+    if angle:
+        data["angle"] = angle
+
+    response = requests.put(
+        f"{API_HOSTS[board]}/v2/climbs/{uuid}",
+        headers={"authorization": f"Bearer {token}"},
+        json=data,
+    )
+    response.raise_for_status()
+    return response.json()
