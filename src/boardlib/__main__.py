@@ -9,11 +9,10 @@ import boardlib.api.aurora
 import boardlib.api.moon
 import boardlib.db.aurora
 
-
 LOGBOOK_FIELDS = ("board", "angle", "name", "date", "grade", "tries", "is_mirror")
 
 
-def logbook_entries(board, username, password, grade_type="font"):
+def _logbook_entries(board, username, password, grade_type="font"):
     api = (
         boardlib.api.moon
         if board.startswith("moon")
@@ -28,7 +27,7 @@ def logbook_entries(board, username, password, grade_type="font"):
         raise ValueError(f"Unknown board {board}")
 
 
-def write_entries(output_file, entries, no_headers=False):
+def _write_logbook_entries(output_file, entries, no_headers=False):
     writer = csv.DictWriter(output_file, LOGBOOK_FIELDS)
     if not no_headers:
         writer.writeheader()
@@ -41,14 +40,15 @@ def handle_logbook_command(args):
     password = os.environ.get(env_var)
     if not password:
         password = getpass.getpass("Password: ")
-    entries = logbook_entries(args.board, args.username, password, args.grade_type)
+    entries = _logbook_entries(args.board, args.username, password, args.grade_type)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as output_file:
-            write_entries(output_file, entries, args.no_headers)
+            _write_logbook_entries(output_file, entries, args.no_headers)
     else:
         sys.stdout.reconfigure(encoding="utf-8")
         write_entries(sys.stdout, entries, args.no_headers)
+        _write_logbook_entries(sys.stdout, entries, args.no_headers)
 
 
 def handle_database_command(args):

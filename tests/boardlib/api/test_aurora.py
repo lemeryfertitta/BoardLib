@@ -14,7 +14,7 @@ class TestAurora(unittest.TestCase):
     )
     def test_login_success(self, mock_post):
         self.assertEqual(
-            boardlib.api.aurora.login("aurora", "test", "test"), "test_login"
+            boardlib.api.aurora._login("aurora", "test", "test"), "test_login"
         )
 
     @unittest.mock.patch(
@@ -23,14 +23,14 @@ class TestAurora(unittest.TestCase):
     )
     def test_login_failure(self, mock_post):
         with self.assertRaises(requests.exceptions.HTTPError):
-            boardlib.api.aurora.login("aurora", "test", "test")
+            boardlib.api.aurora._login("aurora", "test", "test")
 
     @unittest.mock.patch(
         "requests.get",
         side_effect=get_mock_request(json_data="test_explore"),
     )
     def test_explore(self, mock_get):
-        self.assertEqual(boardlib.api.aurora.explore("aurora", "test"), "test_explore")
+        self.assertEqual(boardlib.api.aurora._explore("aurora", "test"), "test_explore")
 
     @unittest.mock.patch(
         "requests.get",
@@ -38,14 +38,14 @@ class TestAurora(unittest.TestCase):
     )
     def test_explore_failure(self, mock_get):
         with self.assertRaises(requests.exceptions.HTTPError):
-            boardlib.api.aurora.explore("aurora", "test")
+            boardlib.api.aurora._explore("aurora", "test")
 
     @unittest.mock.patch(
         "requests.get",
         side_effect=get_mock_request(json_data={"logbook": []}),
     )
     def test_get_logbook(self, mock_get):
-        self.assertEqual(boardlib.api.aurora.get_logbook("aurora", "test", "test"), [])
+        self.assertEqual(boardlib.api.aurora._get_logbook("aurora", "test", "test"), [])
 
     @unittest.mock.patch(
         "requests.get",
@@ -53,14 +53,14 @@ class TestAurora(unittest.TestCase):
     )
     def test_get_logbook_failure(self, mock_get):
         with self.assertRaises(requests.exceptions.HTTPError):
-            boardlib.api.aurora.get_logbook("aurora", "test", "test")
+            boardlib.api.aurora._get_logbook("aurora", "test", "test")
 
     @unittest.mock.patch(
         "requests.get",
         side_effect=get_mock_request(json_data="test_get_gyms"),
     )
     def test_get_gyms(self, mock_get):
-        self.assertEqual(boardlib.api.aurora.get_gyms("aurora"), "test_get_gyms")
+        self.assertEqual(boardlib.api.aurora._get_gyms("aurora"), "test_get_gyms")
 
     @unittest.mock.patch(
         "requests.get",
@@ -68,7 +68,7 @@ class TestAurora(unittest.TestCase):
     )
     def test_get_gyms_failure(self, mock_get):
         with self.assertRaises(requests.exceptions.HTTPError):
-            boardlib.api.aurora.get_gyms("aurora")
+            boardlib.api.aurora._get_gyms("aurora")
 
     @unittest.mock.patch(
         "requests.get",
@@ -76,7 +76,7 @@ class TestAurora(unittest.TestCase):
     )
     def test_get_user(self, mock_get):
         self.assertEqual(
-            boardlib.api.aurora.get_user("aurora", "test", "test"), "test_get_user"
+            boardlib.api.aurora._get_user("aurora", "test", "test"), "test_get_user"
         )
 
     @unittest.mock.patch(
@@ -85,7 +85,7 @@ class TestAurora(unittest.TestCase):
     )
     def test_get_user_failure(self, mock_get):
         with self.assertRaises(requests.exceptions.HTTPError):
-            boardlib.api.aurora.get_user("aurora", "test", "test")
+            boardlib.api.aurora._get_user("aurora", "test", "test")
 
     @unittest.mock.patch(
         "requests.get",
@@ -93,7 +93,7 @@ class TestAurora(unittest.TestCase):
     )
     def test_get_climb_stats(self, mock_get):
         self.assertEqual(
-            boardlib.api.aurora.get_climb_stats("aurora", "test", "test", "test"),
+            boardlib.api.aurora._get_climb_stats("aurora", "test", "test", "test"),
             "test_get_climb_stats",
         )
 
@@ -103,7 +103,7 @@ class TestAurora(unittest.TestCase):
     )
     def test_get_climb_stats_failure(self, mock_get):
         with self.assertRaises(requests.exceptions.HTTPError):
-            boardlib.api.aurora.get_climb_stats("aurora", "test", "test", "test")
+            boardlib.api.aurora._get_climb_stats("aurora", "test", "test", "test")
 
     @unittest.mock.patch(
         "requests.get",
@@ -111,7 +111,7 @@ class TestAurora(unittest.TestCase):
     )
     def test_get_climb_name(self, mock_get):
         self.assertEqual(
-            boardlib.api.aurora.get_climb_name("aurora", "test"), "test_get_climb_name"
+            boardlib.api.aurora._get_climb_name("aurora", "test"), "test_get_climb_name"
         )
 
     @unittest.mock.patch(
@@ -120,7 +120,7 @@ class TestAurora(unittest.TestCase):
     )
     def test_get_climb_name_failure(self, mock_get):
         with self.assertRaises(requests.exceptions.HTTPError):
-            boardlib.api.aurora.get_climb_name("aurora", "test")
+            boardlib.api.aurora._get_climb_name("aurora", "test")
 
     @unittest.mock.patch(
         "requests.post",

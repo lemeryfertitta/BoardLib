@@ -119,7 +119,7 @@ USER_TABLES = [
 ]
 
 
-def login(board, username, password):
+def _login(board, username, password):
     response = requests.post(
         f"{API_HOSTS[board]}/v1/logins",
         json={"username": username, "password": password},
@@ -128,7 +128,7 @@ def login(board, username, password):
     return response.json()
 
 
-def explore(board, token):
+def _explore(board, token):
     response = requests.get(
         f"{API_HOSTS[board]}/explore",
         headers={"authorization": f"Bearer {token}"},
@@ -137,12 +137,12 @@ def explore(board, token):
     return response.json()
 
 
-def get_logbook(board, token, user_id):
+def _get_logbook(board, token, user_id):
     sync_results = user_sync(board, token, user_id, tables=["ascents"])
     return sync_results["PUT"]["ascents"]
 
 
-def get_gyms(board):
+def _get_gyms(board):
     """
     :return:
         {
@@ -163,7 +163,7 @@ def get_gyms(board):
     return response.json()
 
 
-def get_user(board, token, user_id):
+def _get_user(board, token, user_id):
     response = requests.get(
         f"{API_HOSTS[board]}/v2/users/{user_id}",
         headers={"authorization": f"Bearer {token}"},
@@ -172,7 +172,7 @@ def get_user(board, token, user_id):
     return response.json()
 
 
-def get_climb_stats(board, token, climb_id, angle):
+def _get_climb_stats(board, token, climb_id, angle):
     response = requests.get(
         f"{API_HOSTS[board]}/v1/climbs/{climb_id}/info",
         headers={"authorization": f"Bearer {token}"},
@@ -182,7 +182,7 @@ def get_climb_stats(board, token, climb_id, angle):
     return response.json()
 
 
-def get_climb(board, token, climb_id):
+def _get_climb(board, token, climb_id):
     response = requests.get(
         f"{API_HOSTS[board]}/v1/climbs/{climb_id}/info",
         headers={"authorization": f"Bearer {token}"},
@@ -191,7 +191,7 @@ def get_climb(board, token, climb_id):
     response.raise_for_status()
 
 
-def get_climb_name(board, climb_id):
+def _get_climb_name(board, climb_id):
     response = requests.get(
         f"{WEB_HOSTS[board]}/climbs/{climb_id}",
     )
@@ -326,15 +326,15 @@ def shared_sync(
 
 
 def logbook_entries(board, username, password, grade_type="font"):
-    login_info = login(board, username, password)
-    raw_entries = get_logbook(board, login_info["token"], login_info["user_id"])
+    login_info = _login(board, username, password)
+    raw_entries = _get_logbook(board, login_info["token"], login_info["user_id"])
     for raw_entry in raw_entries:
         font_grade = GRADES[raw_entry["difficulty"]]
         attempts = ATTEMPTS[raw_entry["attempt_id"] if raw_entry["attempt_id"] else raw_entry["bid_count"]]
         yield {
             "board": board,
             "angle": raw_entry["angle"],
-            "name": get_climb_name(board, raw_entry["climb_uuid"]),
+            "name": _get_climb_name(board, raw_entry["climb_uuid"]),
             "date": datetime.datetime.strptime(
                 raw_entry["climbed_at"], "%Y-%m-%d %H:%M:%S"
             )
@@ -351,7 +351,7 @@ def logbook_entries(board, username, password, grade_type="font"):
 
 
 def gym_boards(board):
-    for gym in get_gyms(board)["gyms"]:
+    for gym in _get_gyms(board)["gyms"]:
         yield {
             "name": gym["name"],
             "latitude": gym["latitude"],
