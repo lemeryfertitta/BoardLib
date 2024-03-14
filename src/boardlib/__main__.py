@@ -10,6 +10,7 @@ import boardlib.api.moon
 import boardlib.db.aurora
 
 LOGBOOK_FIELDS = ("board", "angle", "name", "date", "grade", "tries", "is_mirror")
+GYM_FIELDS = ("name", "latitude", "longitude")
 
 
 def _logbook_entries(board, username, password, grade_type="font"):
@@ -35,6 +36,14 @@ def _write_logbook_entries(output_file, entries, no_headers=False):
     writer.writerows(entries)
 
 
+def _write_gyms(output_file, entries, no_headers=False):
+    writer = csv.DictWriter(output_file, GYM_FIELDS)
+    if not no_headers:
+        writer.writeheader()
+
+    writer.writerows(entries)
+
+
 def handle_logbook_command(args):
     env_var = f"{args.board.upper()}_PASSWORD"
     password = os.environ.get(env_var)
@@ -47,8 +56,15 @@ def handle_logbook_command(args):
             _write_logbook_entries(output_file, entries, args.no_headers)
     else:
         sys.stdout.reconfigure(encoding="utf-8")
-        write_entries(sys.stdout, entries, args.no_headers)
         _write_logbook_entries(sys.stdout, entries, args.no_headers)
+
+
+def handle_gyms_command(args):
+    print(f"Downloading gyms")
+    gyms = boardlib.api.aurora.gym_boards(args.board)
+
+    sys.stdout.reconfigure(encoding="utf-8")
+    _write_gyms(sys.stdout, gyms, False)
 
 
 def handle_database_command(args):
@@ -83,6 +99,18 @@ def add_database_parser(subparsers):
     )
     database_parser.set_defaults(func=handle_database_command)
 
+def add_gyms_parser(subparsers):
+    database_parser = subparsers.add_parser(
+        "gyms", help="List gyms with board"
+    )
+    database_parser.add_argument(
+        "board",
+        help="Board name",
+        choices=sorted(boardlib.api.aurora.HOST_BASES.keys()),
+    )
+
+    database_parser.set_defaults(func=handle_gyms_command)
+
 
 def add_logbook_parser(subparsers):
     logbook_parser = subparsers.add_parser(
@@ -116,6 +144,7 @@ def main():
     subparsers = parser.add_subparsers(dest="command", required=True)
     add_logbook_parser(subparsers)
     add_database_parser(subparsers)
+    add_gyms_parser(subparsers)
     args = parser.parse_args()
     args.func(args)
 
