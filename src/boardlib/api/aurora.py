@@ -369,9 +369,9 @@ def save_climb(
     name,
     description,
     is_draft,
-    frames_count,
-    frames_pace,
     frames,
+    frames_count=1,
+    frames_pace=0,
     angle=None,
 ):
     uuid = generate_uuid()
