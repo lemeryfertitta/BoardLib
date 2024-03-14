@@ -48,6 +48,47 @@ GRADES = {
     34: "9A",
 }
 
+ATTEMPTS = {
+    0: "unknown",
+    1: "Flash",
+    2: "2 tries",
+    3: "3 tries",
+    4: "4 tries",
+    5: "5 tries",
+    6: "6 tries",
+    7: "7 tries",
+    8: "8 tries",
+    9: "9 tries",
+    10: "10 tries",
+    11: "1 day",
+    12: "2 days",
+    13: "3 days",
+    14: "4 days",
+    15: "5 days",
+    16: "6 days",
+    17: "7 days",
+    18: "8 days",
+    19: "9 days",
+    20: "10 days",
+    21: "1 month",
+    22: "2 months",
+    23: "3 months",
+    24: "4 months",
+    25: "5 months",
+    26: "6 months",
+    27: "7 months",
+    28: "8 months",
+    29: "9 months",
+    30: "10 months",
+    31: "11 months",
+    32: "12 months",
+    33: "1 year",
+    34: "2 years",
+    35: "3 years",
+    36: "4 years",
+    37: "5 years",
+}
+
 SHARED_TABLES = [
     "products",
     "product_sizes",
@@ -289,7 +330,7 @@ def logbook_entries(board, username, password, grade_type="font"):
     raw_entries = get_logbook(board, login_info["token"], login_info["user_id"])
     for raw_entry in raw_entries:
         font_grade = GRADES[raw_entry["difficulty"]]
-        attempt_id = raw_entry["attempt_id"]
+        attempts = ATTEMPTS[raw_entry["attempt_id"] if raw_entry["attempt_id"] else raw_entry["bid_count"]]
         yield {
             "board": board,
             "angle": raw_entry["angle"],
@@ -304,7 +345,7 @@ def logbook_entries(board, username, password, grade_type="font"):
                 if grade_type == "font"
                 else boardlib.util.grades.FONT_TO_HUECO[font_grade]
             ),
-            "tries": attempt_id if attempt_id else raw_entry["bid_count"],
+            "tries": attempts,
             "is_mirror": raw_entry["is_mirror"],
         }
 
