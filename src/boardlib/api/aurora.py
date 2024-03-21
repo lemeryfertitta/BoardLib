@@ -21,33 +21,6 @@ WEB_HOSTS = {
     board: f"https://{host_base}.com" for board, host_base in HOST_BASES.items()
 }
 
-GRADES = {
-    10: "4A",
-    11: "4B",
-    12: "4C",
-    13: "5A",
-    14: "5B",
-    15: "5C",
-    16: "6A",
-    17: "6A+",
-    18: "6B",
-    19: "6B+",
-    20: "6C",
-    21: "6C+",
-    22: "7A",
-    23: "7A+",
-    24: "7B",
-    25: "7B+",
-    26: "7C",
-    27: "7C+",
-    28: "8A",
-    29: "8A+",
-    30: "8B",
-    31: "8B+",
-    32: "8C",
-    33: "8C+",
-    34: "9A",
-}
 
 SHARED_TABLES = [
     "products",
@@ -100,6 +73,11 @@ def explore(board, token):
 def get_logbook(board, token, user_id):
     sync_results = user_sync(board, token, user_id, tables=["ascents"])
     return sync_results["PUT"]["ascents"]
+
+
+def get_grades(board):
+    sync_results = shared_sync(board, tables=["difficulty_grades"])
+    return sync_results["PUT"]["difficulty_grades"]
 
 
 def get_gyms(board):
@@ -279,8 +257,8 @@ def shared_sync(
 def logbook_entries(board, username, password, grade_type="font"):
     login_info = login(board, username, password)
     raw_entries = get_logbook(board, login_info["token"], login_info["user_id"])
+    grades = get_grades(board)
     for raw_entry in raw_entries:
-        font_grade = GRADES[raw_entry["difficulty"]]
         attempt_id = raw_entry["attempt_id"]
         yield {
             "board": board,
@@ -292,9 +270,9 @@ def logbook_entries(board, username, password, grade_type="font"):
             .date()
             .isoformat(),
             "grade": (
-                font_grade
+                grades[raw_entry["difficulty"]]["french_name"]
                 if grade_type == "font"
-                else boardlib.util.grades.FONT_TO_HUECO[font_grade]
+                else grades[raw_entry["difficulty"]]["verm_name"]
             ),
             "tries": attempt_id if attempt_id else raw_entry["bid_count"],
             "is_mirror": raw_entry["is_mirror"],
