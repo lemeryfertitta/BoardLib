@@ -259,6 +259,8 @@ def logbook_entries(board, username, password, grade_type="font"):
     raw_entries = get_logbook(board, login_info["token"], login_info["user_id"])
     grades = get_grades(board)
     for raw_entry in raw_entries:
+        if not raw_entry["is_listed"]:
+            continue
         attempt_id = raw_entry["attempt_id"]
         yield {
             "board": board,
