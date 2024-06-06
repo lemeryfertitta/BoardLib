@@ -391,3 +391,50 @@ def save_climb(
     )
     response.raise_for_status()
     return response.json()
+
+
+def get_bids_logbook(board, token, user_id):
+    sync_results = user_sync(board, token, user_id, tables=["bids"])
+    return sync_results["PUT"]["bids"]
+
+
+def bids_logbook_entries(board, username, password, db_path=None):
+    login_info = login(board, username, password)
+    raw_entries = get_bids_logbook(board, login_info["token"], login_info["user_id"])
+    
+    for raw_entry in raw_entries:
+        yield {
+            "uuid": raw_entry["uuid"],
+            "user_id": raw_entry["user_id"],
+            "climb_uuid": raw_entry["climb_uuid"],
+            "angle": raw_entry["angle"],
+            "is_mirror": raw_entry["is_mirror"],
+            "bid_count": raw_entry["bid_count"],
+            "comment": raw_entry["comment"],
+            "climbed_at": raw_entry["climbed_at"],
+            "created_at": raw_entry["created_at"],
+        }
+
+
+def bids_logbook_entries(board, username, password, db_path=None):
+    login_info = login(board, username, password)
+    raw_entries = get_bids_logbook(board, login_info["token"], login_info["user_id"])
+    
+    for raw_entry in raw_entries:
+        if db_path:
+            climb_name = get_climb_name_from_db(db_path, raw_entry["climb_uuid"])
+        else:
+            climb_name = get_climb_name(board, raw_entry["climb_uuid"])
+        
+        yield {
+            "uuid": raw_entry["uuid"],
+            "user_id": raw_entry["user_id"],
+            "climb_uuid": raw_entry["climb_uuid"],
+            "climb_name": climb_name if climb_name else "Unknown Climb",
+            "angle": raw_entry["angle"],
+            "is_mirror": raw_entry["is_mirror"],
+            "bid_count": raw_entry["bid_count"],
+            "comment": raw_entry["comment"],
+            "climbed_at": raw_entry["climbed_at"],
+            "created_at": raw_entry["created_at"],
+        }

@@ -10,6 +10,7 @@ import boardlib.api.moon
 import boardlib.db.aurora
 
 LOGBOOK_FIELDS = ("board", "angle", "name", "date", "grade", "tries", "is_mirror")
+BIDS_LOGBOOK_FIELDS = ("uuid", "user_id", "climb_uuid", "climb_name", "angle", "is_mirror", "bid_count", "comment", "climbed_at", "created_at")
 
 
 def logbook_entries(board, username, password, grade_type="font", database=None):
@@ -26,12 +27,24 @@ def logbook_entries(board, username, password, grade_type="font", database=None)
     else:
         raise ValueError(f"Unknown board {board}")
 
+def bids_logbook_entries(board, username, password, db_path=None):
+    api = (
+        boardlib.api.moon
+        if board.startswith("moon")
+        else boardlib.api.aurora
+        if board in boardlib.api.aurora.HOST_BASES
+        else None
+    )
+    if api:
+        yield from api.bids_logbook_entries(board, username, password, db_path)
+    else:
+        raise ValueError(f"Unknown board {board}")
 
-def write_entries(output_file, entries, no_headers=False):
-    writer = csv.DictWriter(output_file, LOGBOOK_FIELDS)
+
+def write_entries(output_file, entries, no_headers=False, fields=LOGBOOK_FIELDS):
+    writer = csv.DictWriter(output_file, fieldnames=fields)
     if not no_headers:
         writer.writeheader()
-
     writer.writerows(entries)
 
 
@@ -48,6 +61,20 @@ def handle_logbook_command(args):
     else:
         sys.stdout.reconfigure(encoding="utf-8")
         write_entries(sys.stdout, entries, args.no_headers)
+
+def handle_bids_logbook_command(args):
+    env_var = f"{args.board.upper()}_PASSWORD"
+    password = os.environ.get(env_var)
+    if not password:
+        password = getpass.getpass("Password: ")
+    entries = bids_logbook_entries(args.board, args.username, password, args.db_path)
+
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as output_file:
+            write_entries(output_file, entries, args.no_headers, fields=BIDS_LOGBOOK_FIELDS)
+    else:
+        sys.stdout.reconfigure(encoding="utf-8")
+        write_entries(sys.stdout, entries, args.no_headers, fields=BIDS_LOGBOOK_FIELDS)
 
 
 def handle_database_command(args):
@@ -116,14 +143,39 @@ def add_logbook_parser(subparsers):
     )
     logbook_parser.set_defaults(func=handle_logbook_command)
 
+def add_bids_logbook_parser(subparsers):
+    bids_logbook_parser = subparsers.add_parser(
+        "bids_logbook", help="Download bids logbook entries to CSV"
+    )
+    bids_logbook_parser.add_argument(
+        "board",
+        help="Board name",
+        choices=sorted(
+            boardlib.api.moon.BOARD_IDS.keys() | boardlib.api.aurora.HOST_BASES.keys()
+        ),
+    )
+    bids_logbook_parser.add_argument("-u", "--username", help="Username", required=True)
+    bids_logbook_parser.add_argument("-o", "--output", help="Output file", required=False)
+    bids_logbook_parser.add_argument(
+        "--no-headers", help="Don't write headers", action="store_true", required=False
+    )
+    bids_logbook_parser.add_argument(
+        "--db_path",
+        help="Path to the local database (optional). Using a local database can significantly speed up the logbook generation. Create a local database with the 'boardlib database' command.",
+        type=pathlib.Path,
+        required=False,
+    )
+    bids_logbook_parser.set_defaults(func=handle_bids_logbook_command)
 
 def main():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
     add_logbook_parser(subparsers)
+    add_bids_logbook_parser(subparsers)
     add_database_parser(subparsers)
     args = parser.parse_args()
     args.func(args)
+
 
 
 if __name__ == "__main__":
