@@ -12,7 +12,7 @@ import boardlib.db.aurora
 LOGBOOK_FIELDS = ("board", "angle", "name", "date", "grade", "tries", "is_mirror")
 
 
-def logbook_entries(board, username, password, grade_type="font", db_path=None):
+def logbook_entries(board, username, password, grade_type="font", database=None):
     api = (
         boardlib.api.moon
         if board.startswith("moon")
@@ -21,7 +21,7 @@ def logbook_entries(board, username, password, grade_type="font", db_path=None):
         else None
     )
     if api:
-        yield from api.logbook_entries(board, username, password, grade_type, db_path)
+        yield from api.logbook_entries(board, username, password, grade_type, database)
 
     else:
         raise ValueError(f"Unknown board {board}")
@@ -40,7 +40,7 @@ def handle_logbook_command(args):
     password = os.environ.get(env_var)
     if not password:
         password = getpass.getpass("Password: ")
-    entries = logbook_entries(args.board, args.username, password, args.grade_type, args.db_path)
+    entries = logbook_entries(args.board, args.username, password, args.grade_type, args.database)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as output_file:
@@ -108,7 +108,8 @@ def add_logbook_parser(subparsers):
         required=False,
     )
     logbook_parser.add_argument(
-        "--db_path",
+        "-d",
+        "--database",
         help="Path to the local database (optional). Using a local database can significantly speed up the logbook generation. Create a local database with the 'boardlib database' command.",
         type=pathlib.Path,
         required=False,

@@ -128,8 +128,8 @@ def get_climb_name(board, climb_id):
     return bs4.BeautifulSoup(response.text, "html.parser").find("h1").text
 
 # Add a function to get climb name from local database
-def get_climb_name_from_db(db_path, climb_uuid):
-    conn = sqlite3.connect(db_path)
+def get_climb_name_from_db(database, climb_uuid):
+    conn = sqlite3.connect(database)
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM climbs WHERE uuid = ?", (climb_uuid,))
     row = cursor.fetchone()
@@ -265,7 +265,7 @@ def shared_sync(
     return response.json()
 
 
-def logbook_entries(board, username, password, grade_type="font", db_path=None):
+def logbook_entries(board, username, password, grade_type="font", database=None):
     login_info = login(board, username, password)
     raw_entries = get_logbook(board, login_info["token"], login_info["user_id"])
     grades = get_grades(board)
@@ -273,8 +273,8 @@ def logbook_entries(board, username, password, grade_type="font", db_path=None):
         if not raw_entry["is_listed"]:
             continue
         attempt_id = raw_entry["attempt_id"]
-        if db_path:
-            climb_name = get_climb_name_from_db(db_path, raw_entry["climb_uuid"])
+        if database:
+            climb_name = get_climb_name_from_db(database, raw_entry["climb_uuid"])
         else:
             climb_name = get_climb_name(board, raw_entry["climb_uuid"])
         yield {
