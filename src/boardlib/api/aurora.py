@@ -1,6 +1,6 @@
 import datetime
 import uuid
-
+import sqlite3
 import bs4
 import requests
 
@@ -126,6 +126,17 @@ def get_climb_name(board, climb_id):
     )
     response.raise_for_status()
     return bs4.BeautifulSoup(response.text, "html.parser").find("h1").text
+
+# Add a function to get climb name from local database
+def get_climb_name_from_db(database, climb_uuid):
+    conn = sqlite3.connect(database)
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM climbs WHERE uuid = ?", (climb_uuid,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return row[0]
+    return None
 
 
 def user_sync(
@@ -254,7 +265,7 @@ def shared_sync(
     return response.json()
 
 
-def logbook_entries(board, username, password, grade_type="font"):
+def logbook_entries(board, username, password, grade_type="font", database=None):
     login_info = login(board, username, password)
     raw_entries = get_logbook(board, login_info["token"], login_info["user_id"])
     grades = get_grades(board)
@@ -262,10 +273,14 @@ def logbook_entries(board, username, password, grade_type="font"):
         if not raw_entry["is_listed"]:
             continue
         attempt_id = raw_entry["attempt_id"]
+        if database:
+            climb_name = get_climb_name_from_db(database, raw_entry["climb_uuid"])
+        else:
+            climb_name = get_climb_name(board, raw_entry["climb_uuid"])
         yield {
             "board": board,
             "angle": raw_entry["angle"],
-            "name": get_climb_name(board, raw_entry["climb_uuid"]),
+            "name": climb_name if climb_name else "Unknown Climb",
             "date": datetime.datetime.strptime(
                 raw_entry["climbed_at"], "%Y-%m-%d %H:%M:%S"
             )
