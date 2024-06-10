@@ -542,3 +542,11 @@ def total_logbook_entries(board, username, password, grade_type="font", db_path=
     final_logbook_df['sessions_count'] = final_logbook_df.groupby(['climb_name', 'is_mirror'])['date'].rank(method='dense').astype(int)
     
     return final_logbook_df
+
+'''
+ToDo:
+* Consider Angle in Session_Count and is_repeat.
+* Get Grade from grade_stats
+    Either average_grade or displayed grade.
+    Solution for local db and API calls needed
+'''
