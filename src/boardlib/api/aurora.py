@@ -3,6 +3,7 @@ import uuid
 import sqlite3
 import bs4
 import requests
+import pandas as pd
 
 import boardlib.util.grades
 
@@ -398,22 +399,6 @@ def get_bids_logbook(board, token, user_id):
     return sync_results["PUT"]["bids"]
 
 
-def bids_logbook_entries(board, username, password, db_path=None):
-    login_info = login(board, username, password)
-    raw_entries = get_bids_logbook(board, login_info["token"], login_info["user_id"])
-    
-    for raw_entry in raw_entries:
-        yield {
-            "uuid": raw_entry["uuid"],
-            "user_id": raw_entry["user_id"],
-            "climb_uuid": raw_entry["climb_uuid"],
-            "angle": raw_entry["angle"],
-            "is_mirror": raw_entry["is_mirror"],
-            "bid_count": raw_entry["bid_count"],
-            "comment": raw_entry["comment"],
-            "climbed_at": raw_entry["climbed_at"],
-            "created_at": raw_entry["created_at"],
-        }
 
 
 def bids_logbook_entries(board, username, password, db_path=None):
@@ -438,3 +423,122 @@ def bids_logbook_entries(board, username, password, db_path=None):
             "climbed_at": raw_entry["climbed_at"],
             "created_at": raw_entry["created_at"],
         }
+
+
+def total_logbook_entries(board, username, password, grade_type="font", db_path=None):
+    # Get bids and ascents data
+    login_info = login(board, username, password)
+    token = login_info["token"]
+    user_id = login_info["user_id"]
+    
+    bids_entries = list(bids_logbook_entries(board, username, password, db_path))
+    raw_ascents_entries = get_logbook(board, token, user_id)
+    
+    # Convert bids entries to DataFrame
+    bids_df = pd.DataFrame(bids_entries)
+    bids_df['climbed_at'] = pd.to_datetime(bids_df['climbed_at'])
+    
+    # Process raw ascents entries and convert to DataFrame
+    ascents_entries = []
+    grades = get_grades(board)
+
+    # Convert grades to dictionary for easy lookup
+    grades_dict = {grade['difficulty']: grade for grade in grades}
+
+    for raw_entry in raw_ascents_entries:
+        if not raw_entry["is_listed"]:
+            continue
+        if db_path:
+            climb_name = get_climb_name_from_db(db_path, raw_entry["climb_uuid"])
+        else:
+            climb_name = get_climb_name(board, raw_entry["climb_uuid"])
+        
+        grade_info = grades_dict.get(raw_entry["difficulty"], {})
+        grade = grade_info.get("french_name" if grade_type == "font" else "verm_name", "Unknown")
+        
+        ascents_entries.append({
+            "board": board,
+            "angle": raw_entry["angle"],
+            "name": climb_name if climb_name else "Unknown Climb",
+            "date": datetime.datetime.strptime(raw_entry["climbed_at"], "%Y-%m-%d %H:%M:%S"),
+            "grade": grade,
+            "tries": raw_entry["attempt_id"] if raw_entry["attempt_id"] else raw_entry["bid_count"],
+            "is_mirror": raw_entry["is_mirror"]
+        })
+    
+    ascents_df = pd.DataFrame(ascents_entries)
+    
+    # Summarize the bids table
+    bids_summary = bids_df.groupby(['climb_name', bids_df['climbed_at'].dt.date, 'is_mirror']).agg({
+        'bid_count': 'sum',
+        'angle': 'first'
+    }).reset_index().rename(columns={'climbed_at': 'date'})
+    
+    # Create a new column for is_ascent
+    bids_summary['is_ascent'] = False
+    bids_summary['tries'] = bids_summary['bid_count']
+    
+    # Check for ascents and update the logbook
+    final_logbook = []
+
+    for _, ascent_row in ascents_df.iterrows():
+        ascent_date = ascent_row['date'].date()
+        ascent_climb_name = ascent_row['name']
+        ascent_is_mirror = ascent_row['is_mirror']
+        
+        # Find corresponding bids entries
+        bid_match = bids_summary[(bids_summary['climb_name'] == ascent_climb_name) & (bids_summary['date'] == ascent_date) & (bids_summary['is_mirror'] == ascent_is_mirror)]
+        
+        if not bid_match.empty:
+            bid_row = bid_match.iloc[0]
+            total_tries = ascent_row['tries'] + bid_row['tries']
+            final_logbook.append({
+                'board': ascent_row['board'],
+                'angle': ascent_row['angle'],
+                'climb_name': ascent_row['name'],
+                'date': ascent_row['date'],
+                'grade': ascent_row['grade'],
+                'tries': total_tries,
+                'is_mirror': ascent_row['is_mirror'],
+                'is_ascent': True
+            })
+            bids_summary = bids_summary.drop(bid_match.index)  # Remove matched bids
+        else:
+            final_logbook.append({
+                'board': ascent_row['board'],
+                'angle': ascent_row['angle'],
+                'climb_name': ascent_row['name'],
+                'date': ascent_row['date'],
+                'grade': ascent_row['grade'],
+                'tries': ascent_row['tries'],
+                'is_mirror': ascent_row['is_mirror'],
+                'is_ascent': True
+            })
+    
+    # Add remaining bids that do not have corresponding ascents
+    for _, bid_row in bids_summary.iterrows():
+        final_logbook.append({
+            'board': board,
+            'angle': bid_row['angle'],
+            'climb_name': bid_row['climb_name'],
+            'date': bid_row['date'],
+            'grade': 'Unknown',  # We don't have grade information for bids
+            'tries': bid_row['tries'],
+            'is_mirror': bid_row['is_mirror'],
+            'is_ascent': False
+        })
+    
+    # Convert to DataFrame
+    final_logbook_df = pd.DataFrame(final_logbook, columns=['board', 'angle', 'climb_name', 'date', 'grade', 'tries', 'is_mirror', 'is_ascent'])
+    
+    # Ensure all dates are converted to Timestamps
+    final_logbook_df['date'] = pd.to_datetime(final_logbook_df['date'])
+    
+    # Sort the DataFrame by date
+    final_logbook_df = final_logbook_df.sort_values(by='date')
+    
+    # Add is_repeat and sessions_count columns
+    final_logbook_df['is_repeat'] = final_logbook_df.duplicated(subset=['climb_name', 'is_mirror'], keep='first')
+    final_logbook_df['sessions_count'] = final_logbook_df.groupby(['climb_name', 'is_mirror'])['date'].rank(method='dense').astype(int)
+    
+    return final_logbook_df
