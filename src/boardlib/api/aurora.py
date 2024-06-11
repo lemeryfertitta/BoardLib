@@ -439,7 +439,7 @@ def get_displayed_grade_from_db(database, climb_uuid, angle, grades_dict):
         return grade_info.get("french_name", "NA")
     return "NA"
 
-def total_logbook_entries(board, username, password, grade_type="font", db_path=None):
+def get_full_logbook_entries(board, username, password, grade_type="font", db_path=None):
     # Get bids and ascents data
     login_info = login(board, username, password)
     token = login_info["token"]
@@ -553,7 +553,7 @@ def total_logbook_entries(board, username, password, grade_type="font", db_path=
             'angle': bid_row['angle'],
             'climb_name': bid_row['climb_name'],
             'date': bid_row['date'],
-            'logged_grade': 'NA',  # We don't have grade information for bids
+            'logged_grade': 'NA',  # We don't have logged_grade information for bids
             'displayed_grade': displayed_grade,
             'tries': bid_row['tries'],
             'is_mirror': bid_row['is_mirror'],
@@ -561,13 +561,11 @@ def total_logbook_entries(board, username, password, grade_type="font", db_path=
         })
     
     # Convert to DataFrame
-    final_logbook_df = pd.DataFrame(final_logbook, columns=['board', 'angle', 'climb_name', 'date', 'logged_grade', 'displayed_grade', 'tries', 'is_mirror', 'is_ascent'])
+    full_logbook_df = pd.DataFrame(final_logbook, columns=['board', 'angle', 'climb_name', 'date', 'logged_grade', 'displayed_grade', 'tries', 'is_mirror', 'is_ascent'])
     
     # Ensure all dates are converted to Timestamps
-    final_logbook_df['date'] = pd.to_datetime(final_logbook_df['date'])
+    full_logbook_df['date'] = pd.to_datetime(full_logbook_df['date'])
     
-    # Sort the DataFrame by date
-    final_logbook_df = final_logbook_df.sort_values(by='date')
 
     # Calculate sessions_count and tries_total
     def calculate_sessions_count(group):
@@ -578,23 +576,20 @@ def total_logbook_entries(board, username, password, grade_type="font", db_path=
         group['sessions_count'] = group['date'].dt.date.map(sessions_count_map)
         return group
     
-    final_logbook_df = final_logbook_df.groupby(['climb_name', 'is_mirror', 'angle']).apply(calculate_sessions_count).reset_index(drop=True)
+    full_logbook_df = full_logbook_df.groupby(['climb_name', 'is_mirror', 'angle']).apply(calculate_sessions_count).reset_index(drop=True)
     
     def calculate_tries_total(group):
         group = group.sort_values(by='date')
         group['tries_total'] = group['tries'].cumsum()
         return group
 
-    final_logbook_df = final_logbook_df.groupby(['climb_name', 'is_mirror', 'angle']).apply(calculate_tries_total).reset_index(drop=True)
+    full_logbook_df = full_logbook_df.groupby(['climb_name', 'is_mirror', 'angle']).apply(calculate_tries_total).reset_index(drop=True)
     
     # Add is_repeat column
-    final_logbook_df['is_repeat'] = final_logbook_df.duplicated(subset=['climb_name', 'is_mirror', 'angle'], keep='first')
-    
-    return final_logbook_df
+    full_logbook_df['is_repeat'] = full_logbook_df.duplicated(subset=['climb_name', 'is_mirror', 'angle'], keep='first')
 
-'''
-ToDo:
-* Get Grade from grade_stats
-    Either average_grade or displayed grade.
-    Solution for local db and API calls needed
-'''
+    # Sort the DataFrame by date
+    full_logbook_df = full_logbook_df.sort_values(by='date')
+    
+    return full_logbook_df
+
