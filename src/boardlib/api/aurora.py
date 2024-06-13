@@ -424,7 +424,7 @@ def bids_logbook_entries(board, username, password, db_path=None):
             "created_at": raw_entry["created_at"],
         }
 
-def get_displayed_grade_from_db(database, climb_uuid, angle, grades_dict):
+def get_displayed_grade_from_db(database, climb_uuid, angle, grades_dict, grade_type):
     conn = sqlite3.connect(database)
     cursor = conn.cursor()
     cursor.execute(
@@ -436,7 +436,7 @@ def get_displayed_grade_from_db(database, climb_uuid, angle, grades_dict):
     if row:
         difficulty_value = round(row[0])
         grade_info = grades_dict.get(difficulty_value, {})
-        return grade_info.get("french_name")
+        return grade_info.get("french_name" if grade_type == "font" else "verm_name")
     return None
 
 def process_raw_ascent_entries(raw_ascents_entries, board, db_path, grades_dict, grade_type):
@@ -446,7 +446,7 @@ def process_raw_ascent_entries(raw_ascents_entries, board, db_path, grades_dict,
             continue
         if db_path:
             climb_name = get_climb_name_from_db(db_path, raw_entry["climb_uuid"])
-            displayed_grade = get_displayed_grade_from_db(db_path, raw_entry["climb_uuid"], raw_entry["angle"], grades_dict)
+            displayed_grade = get_displayed_grade_from_db(db_path, raw_entry["climb_uuid"], raw_entry["angle"], grades_dict, grade_type)
         else:
             climb_name = get_climb_name(board, raw_entry["climb_uuid"])
             displayed_grade = None
@@ -478,7 +478,7 @@ def summarize_bids(bids_df, board):
     bids_summary['board'] = board  # Ensure the 'board' column is included
     return bids_summary
 
-def combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict):
+def combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, grade_type):
     final_logbook = []
 
     for _, ascent_row in ascents_df.iterrows():
@@ -527,7 +527,7 @@ def combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict):
 
     for _, bid_row in bids_summary.iterrows():
         if db_path:
-            displayed_grade = get_displayed_grade_from_db(db_path, bid_row["climb_uuid"], bid_row["angle"], grades_dict)
+            displayed_grade = get_displayed_grade_from_db(db_path, bid_row["climb_uuid"], bid_row["angle"], grades_dict, grade_type)
         else:
             displayed_grade = None
         
@@ -578,7 +578,7 @@ def get_full_logbook_entries(board, username, password, grade_type="font", db_pa
     
     bids_summary = summarize_bids(bids_df, board)
     
-    final_logbook = combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict)
+    final_logbook = combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, grade_type)
     
     full_logbook_df = pd.DataFrame(final_logbook, columns=['board', 'angle', 'climb_name', 'date', 'logged_grade', 'displayed_grade', 'tries', 'is_mirror', 'is_ascent', 'comment'])
     full_logbook_df['date'] = pd.to_datetime(full_logbook_df['date'])
