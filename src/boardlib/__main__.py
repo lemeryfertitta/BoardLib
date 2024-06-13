@@ -11,7 +11,7 @@ import boardlib.db.aurora
 
 
 LOGBOOK_FIELDS = ("board", "angle", "name", "date", "grade", "tries", "is_mirror")
-FULL_LOGBOOK_FIELDS = ("board", "angle", "climb_name", "date", "logged_grade", "displayed_grade", "tries", "is_mirror", "sessions_count", "tries_total", "is_repeat", "is_ascent")
+FULL_LOGBOOK_FIELDS = ("board", "angle", "climb_name", "date", "logged_grade", "displayed_grade", "tries", "is_mirror", "sessions_count", "tries_total", "is_repeat", "is_ascent", "comment")
 
 
 def logbook_entries(board, username, password, grade_type="font", database=None):
@@ -161,7 +161,7 @@ def add_full_logbook_parser(subparsers):
     full_logbook_parser.add_argument(
         "-d",
         "--database",
-        help="Path to the local database (optional). Using a local database can significantly speed up the logbook generation. Create a local database with the 'boardlib database' command.",
+        help="Path to the local database (optional). Using a local database will significantly speed up the logbook generation and is required to retrieve 'displayed_grade'. Create a local database with the 'database' command.",
         type=pathlib.Path,
         required=False,
     )
