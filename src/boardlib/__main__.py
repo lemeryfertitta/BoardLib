@@ -11,7 +11,7 @@ import boardlib.db.aurora
 
 
 LOGBOOK_FIELDS = ("board", "angle", "name", "date", "grade", "tries", "is_mirror")
-FULL_LOGBOOK_FIELDS = ("board", "angle", "climb_name", "date", "logged_grade", "displayed_grade", "tries", "is_mirror", "sessions_count", "tries_total", "is_repeat", "is_ascent", "comment")
+FULL_LOGBOOK_FIELDS = ("board", "angle", "climb_name", "date", "logged_grade", "displayed_grade", 'difficulty', "tries", "is_mirror", "sessions_count", "tries_total", "is_repeat", "is_ascent", "comment")
 
 
 def logbook_entries(board, username, password, grade_type="font", database=None):
