@@ -73,7 +73,7 @@ def explore(board, token):
 
 def get_logbook(board, token, user_id):
     sync_results = user_sync(board, token, user_id, tables=["ascents"])
-    return sync_results["PUT"]["ascents"]
+    return sync_results["PUT"].get("ascents", [])
 
 
 def get_grades(board):
@@ -396,7 +396,7 @@ def save_climb(
 
 def get_bids_logbook(board, token, user_id):
     sync_results = user_sync(board, token, user_id, tables=["bids"])
-    return sync_results["PUT"]["bids"]
+    return sync_results["PUT"].get("bids", [])
 
 
 def bids_logbook_entries(board, username, password, db_path=None):
@@ -580,17 +580,24 @@ def get_full_logbook_entries(board, username, password, grade_type="font", db_pa
     bids_entries = list(bids_logbook_entries(board, username, password, db_path))
     raw_ascents_entries = get_logbook(board, token, user_id)
     
-    bids_df = pd.DataFrame(bids_entries)
-    bids_df['climbed_at'] = pd.to_datetime(bids_df['climbed_at'])
+    if not bids_entries and not raw_ascents_entries:
+        return pd.DataFrame(columns=['board', 'angle', 'climb_name', 'date', 'logged_grade', 'displayed_grade', 'difficulty', 'tries', 'is_mirror', 'is_ascent', 'comment'])
+
+    if bids_entries:
+        bids_df = pd.DataFrame(bids_entries)
+        bids_df['climbed_at'] = pd.to_datetime(bids_df['climbed_at'])
+        bids_summary = summarize_bids(bids_df, board)
+    else:
+        bids_summary = pd.DataFrame(columns=['climb_uuid', 'climb_name', 'date', 'is_mirror', 'angle', 'tries', 'board'])
     
-    grades = get_grades(board)
-    grades_dict = {grade['difficulty']: grade for grade in grades}
-    
-    ascents_entries = process_raw_ascent_entries(raw_ascents_entries, board, db_path, grades_dict, grade_type)
-    ascents_df = pd.DataFrame(ascents_entries)
-    
-    bids_summary = summarize_bids(bids_df, board)
-    
+    if raw_ascents_entries:
+        grades = get_grades(board)
+        grades_dict = {grade['difficulty']: grade for grade in grades}
+        ascents_entries = process_raw_ascent_entries(raw_ascents_entries, board, db_path, grades_dict, grade_type)
+        ascents_df = pd.DataFrame(ascents_entries)
+    else:
+        ascents_df = pd.DataFrame(columns=['board', 'angle', 'climb_uuid', 'name', 'date', 'logged_grade', 'difficulty', 'displayed_grade', 'tries', 'is_mirror', 'comment'])
+
     final_logbook = combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, grade_type)
     
     full_logbook_df = pd.DataFrame(final_logbook, columns=['board', 'angle', 'climb_name', 'date', 'logged_grade', 'displayed_grade', 'difficulty', 'tries', 'is_mirror', 'is_ascent', 'comment'])
