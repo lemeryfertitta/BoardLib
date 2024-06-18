@@ -41,14 +41,14 @@ class TestAurora(unittest.TestCase):
             boardlib.api.aurora.explore("aurora", "test")
 
     @unittest.mock.patch(
-        "requests.get",
-        side_effect=get_mock_request(json_data={"logbook": []}),
+        "requests.post",
+        side_effect=get_mock_request(json_data={"PUT": {"ascents": []}}),
     )
-    def test_get_logbook(self, mock_get):
+    def test_get_logbook(self, mock_post):
         self.assertEqual(boardlib.api.aurora.get_logbook("aurora", "test", "test"), [])
 
     @unittest.mock.patch(
-        "requests.get",
+        "requests.post",
         side_effect=get_mock_request(status_code=requests.codes.bad_request),
     )
     def test_get_logbook_failure(self, mock_get):
@@ -128,7 +128,7 @@ class TestAurora(unittest.TestCase):
     )
     def test_sync(self, mock_get):
         self.assertEqual(
-            boardlib.api.aurora.sync("aurora", "test", "test"), "test_sync"
+            boardlib.api.aurora.user_sync("aurora", "test", "test"), "test_sync"
         )
 
     @unittest.mock.patch(
@@ -137,7 +137,7 @@ class TestAurora(unittest.TestCase):
     )
     def test_sync_failure(self, mock_get):
         with self.assertRaises(requests.exceptions.HTTPError):
-            boardlib.api.aurora.sync("aurora", "test", "test")
+            boardlib.api.aurora.user_sync("aurora", "test", "test")
 
     @unittest.mock.patch(
         "boardlib.api.aurora.login",
@@ -158,6 +158,9 @@ class TestAurora(unittest.TestCase):
                 "attempt_id": 0,
                 "bid_count": 5,
                 "angle": 30,
+                "is_listed": True,  
+                "is_mirror": False,
+                "comment": "Test comment",
             }
         ],
     )
@@ -173,8 +176,9 @@ class TestAurora(unittest.TestCase):
                 "angle": 30,
                 "name": "test_climb_name",
                 "date": "2021-09-30",
-                "grade": "5C",
+                "grade": "6a",
                 "tries": 5,
+                "is_mirror": False,
             },
         )
 
