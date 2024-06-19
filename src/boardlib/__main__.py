@@ -10,8 +10,7 @@ import boardlib.api.moon
 import boardlib.db.aurora
 
 
-LOGBOOK_FIELDS = ("board", "angle", "name", "date", "grade", "tries", "is_mirror")
-FULL_LOGBOOK_FIELDS = ("board", "angle", "climb_name", "date", "logged_grade", "displayed_grade", 'difficulty', "tries", "is_mirror", "sessions_count", "tries_total", "is_repeat", "is_ascent", "comment")
+LOGBOOK_FIELDS = ("board", "angle", "climb_name", "date", "logged_grade", "displayed_grade", "difficulty", "tries", "is_mirror", "sessions_count", "tries_total", "is_repeat", "is_ascent", "comment")
 
 
 def logbook_entries(board, username, password, grade_type="font", database=None):
@@ -37,21 +36,6 @@ def write_entries(output_file, entries, no_headers=False, fields=LOGBOOK_FIELDS)
     writer.writerows(entries)
 
 
-def handle_logbook_command(args):
-    env_var = f"{args.board.upper()}_PASSWORD"
-    password = os.environ.get(env_var)
-    if not password:
-        password = getpass.getpass("Password: ")
-    entries = logbook_entries(args.board, args.username, password, args.grade_type, args.database)
-
-    if args.output:
-        with open(args.output, "w", encoding="utf-8") as output_file:
-            write_entries(output_file, entries, args.no_headers)
-    else:
-        sys.stdout.reconfigure(encoding="utf-8")
-        write_entries(sys.stdout, entries, args.no_headers)
-
-
 def handle_database_command(args):
     if not args.database_path.exists():
         args.database_path.parent.mkdir(parents=True, exist_ok=True)
@@ -64,19 +48,19 @@ def handle_database_command(args):
         print(f"Synchronized {row_count} rows in {table_name}")
 
 
-def handle_full_logbook_command(args):
+def handle_logbook_command(args):
     env_var = f"{args.board.upper()}_PASSWORD"
     password = os.environ.get(env_var)
     if not password:
         password = getpass.getpass("Password: ")
-    entries = boardlib.api.aurora.get_full_logbook_entries(args.board, args.username, password, args.grade_type, args.database)
+    entries = boardlib.api.aurora.logbook_entries(args.board, args.username, password, args.grade_type, args.database)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as output_file:
-            write_entries(output_file, entries.to_dict(orient="records"), args.no_headers, fields=FULL_LOGBOOK_FIELDS)
+            write_entries(output_file, entries.to_dict(orient="records"), args.no_headers, fields=LOGBOOK_FIELDS)
     else:
         sys.stdout.reconfigure(encoding="utf-8")
-        write_entries(sys.stdout, entries.to_dict(orient="records"), args.no_headers, fields=FULL_LOGBOOK_FIELDS)
+        write_entries(sys.stdout, entries.to_dict(orient="records"), args.no_headers, fields=LOGBOOK_FIELDS)
 
 
 def add_database_parser(subparsers):
@@ -99,10 +83,10 @@ def add_database_parser(subparsers):
     )
     database_parser.set_defaults(func=handle_database_command)
 
-
+    
 def add_logbook_parser(subparsers):
     logbook_parser = subparsers.add_parser(
-        "logbook", help="Download logbook entries to CSV"
+        "logbook", help="Download full logbook entries (ascents and bids) to CSV"
     )
     logbook_parser.add_argument(
         "board",
@@ -127,52 +111,17 @@ def add_logbook_parser(subparsers):
     logbook_parser.add_argument(
         "-d",
         "--database",
-        help="Path to the local database (optional). Using a local database can significantly speed up the logbook generation. Create a local database with the 'boardlib database' command.",
+        help="Path to the local database (optional). Using a local database will significantly speed up the logbook generation and is required to retrieve 'displayed_grade' and 'difficulty'. Create a local database with the 'database' command.",
         type=pathlib.Path,
         required=False,
     )
     logbook_parser.set_defaults(func=handle_logbook_command)
-
-    
-def add_full_logbook_parser(subparsers):
-    full_logbook_parser = subparsers.add_parser(
-        "full_logbook", help="Download full logbook entries (ascents and bids) to CSV"
-    )
-    full_logbook_parser.add_argument(
-        "board",
-        help="Board name",
-        choices=sorted(
-            boardlib.api.moon.BOARD_IDS.keys() | boardlib.api.aurora.HOST_BASES.keys()
-        ),
-    )
-    full_logbook_parser.add_argument("-u", "--username", help="Username", required=True)
-    full_logbook_parser.add_argument("-o", "--output", help="Output file", required=False)
-    full_logbook_parser.add_argument(
-        "--no-headers", help="Don't write headers", action="store_true", required=False
-    )
-    full_logbook_parser.add_argument(
-        "-g",
-        "--grade-type",
-        help="Grade type",
-        choices=("font", "hueco"),
-        default="font",
-        required=False,
-    )
-    full_logbook_parser.add_argument(
-        "-d",
-        "--database",
-        help="Path to the local database (optional). Using a local database will significantly speed up the logbook generation and is required to retrieve 'displayed_grade'. Create a local database with the 'database' command.",
-        type=pathlib.Path,
-        required=False,
-    )
-    full_logbook_parser.set_defaults(func=handle_full_logbook_command)
     
 
 def main():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
     add_logbook_parser(subparsers)
-    add_full_logbook_parser(subparsers)  # Add this line
     add_database_parser(subparsers)
     args = parser.parse_args()
     args.func(args)

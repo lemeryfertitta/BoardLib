@@ -266,37 +266,6 @@ def shared_sync(
     return response.json()
 
 
-def logbook_entries(board, username, password, grade_type="font", database=None):
-    login_info = login(board, username, password)
-    raw_entries = get_logbook(board, login_info["token"], login_info["user_id"])
-    grades = get_grades(board)
-    for raw_entry in raw_entries:
-        if not raw_entry["is_listed"]:
-            continue
-        attempt_id = raw_entry["attempt_id"]
-        if database:
-            climb_name = get_climb_name_from_db(database, raw_entry["climb_uuid"])
-        else:
-            climb_name = get_climb_name(board, raw_entry["climb_uuid"])
-        yield {
-            "board": board,
-            "angle": raw_entry["angle"],
-            "name": climb_name,
-            "date": datetime.datetime.strptime(
-                raw_entry["climbed_at"], "%Y-%m-%d %H:%M:%S"
-            )
-            .date()
-            .isoformat(),
-            "grade": (
-                grades[raw_entry["difficulty"]]["french_name"]
-                if grade_type == "font"
-                else grades[raw_entry["difficulty"]]["verm_name"]
-            ),
-            "tries": attempt_id if attempt_id else raw_entry["bid_count"],
-            "is_mirror": raw_entry["is_mirror"],
-        }
-
-
 def gym_boards(board):
     for gym in get_gyms(board)["gyms"]:
         yield {
@@ -438,7 +407,7 @@ def get_difficulty_from_db(database, climb_uuid, angle):
 
 
 def convert_difficulty_to_grade(difficulty, grades_dict, grade_type):
-    grade_info = grades_dict.get(difficulty, {})
+    grade_info = grades_dict.get(round(difficulty), {})
     return grade_info.get("french_name" if grade_type == "font" else "verm_name")
 
 
@@ -572,7 +541,7 @@ def calculate_tries_total(group):
     return group
 
 
-def get_full_logbook_entries(board, username, password, grade_type="font", db_path=None):
+def logbook_entries(board, username, password, grade_type="font", db_path=None):
     login_info = login(board, username, password)
     token = login_info["token"]
     user_id = login_info["user_id"]

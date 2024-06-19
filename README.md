@@ -26,28 +26,28 @@ All [Aurora Climbing](https://auroraclimbing.com/) based boards (Kilter, Tension
 
 To download your logbook entries for a given board:
 
-`boardlib logbook <board_name> --username=<username> --output=<output_file_name>.csv --grade-type="hueco"`
+`boardlib logbook <board_name> --username=<username> --output=<output_file_name>.csv --grade-type="hueco" --database=<local_database_file>`
 
 This outputs a CSV file with the following fields:
 
 ```json
-["board", "angle", "name", "date", "grade", "tries", "is_mirror"]
+["board", "angle", "climb_name", "date", "logged_grade", "displayed_grade", "difficulty", "tries", "is_mirror", "sessions_count", "tries_total", "is_repeat", "is_ascent", "comment"]
 ```
 
 For example, the command
 
-`boardlib moon2017 --username="Luke EF" --output="moon2017.csv" --grade-type="hueco"`
+`boardlib tension --username="Luke EF" --output="tension.csv" --grade-type="hueco" --database="tension.db"`
 
-would output a file named `moon2017.csv` with the following contents:
+would output a file named `tension.csv` with the following contents:
 
 ```
-board,angle,name,date,grade,tries, is_mirror
-moon2017,40,C3PO,2021-07-13,V5,1, False
-moon2017,40,LITTLE BLACK SUBMARINE,2021-07-13,V5,2, False
-moon2017,40,MOUNTAIN GOAT HARD,2021-07-13,V5,1, False
+board,angle,climb_name,date,logged_grade,displayed_grade,difficulty,tries,is_mirror,sessions_count,tries_total,is_repeat,is_ascent,comment
+tension,40,trash bag better,2024-06-17 16:21:23,V3,V3,16.0,3,False,1,3,False,True,
+tension,40,Bumble,2024-06-17 16:28:23,V3,V3,16.0,1,True,1,1,False,True,
+tension,40,sender2,2024-06-17 16:38:06,V5,V5,20.0,2,False,1,2,False,True,
 ...
 ```
-
+When no local database is provided, displayed_grade and difficulty remain empty.
 See `boardlib --help` for a full list of supported board names and feature flags.
 
 #### Supported Boards 🛹
