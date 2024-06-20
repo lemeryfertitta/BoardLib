@@ -407,7 +407,7 @@ def get_difficulty_from_db(database, climb_uuid, angle):
 
 
 def convert_difficulty_to_grade(difficulty, grades_dict, grade_type):
-    grade_info = grades_dict.get(round(difficulty), {})
+    grade_info = grades_dict.get(round(difficulty) if difficulty is not None else None, {})
     return grade_info.get("french_name" if grade_type == "font" else "verm_name")
 
 
