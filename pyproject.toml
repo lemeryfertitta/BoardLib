@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "boardlib"
-version = "0.6.0"
+version = "0.7.0"
 authors = [{ name = "Luke Emery-Fertitta", email = "lemeryfertitta@gmail.com" }]
 description = "Utilities for interacting with climbing board APIs"
 readme = "README.md"
