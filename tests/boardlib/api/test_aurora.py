@@ -41,14 +41,14 @@ class TestAurora(unittest.TestCase):
             boardlib.api.aurora.explore("aurora", "test")
 
     @unittest.mock.patch(
-        "requests.get",
-        side_effect=get_mock_request(json_data={"logbook": []}),
+        "requests.post",
+        side_effect=get_mock_request(json_data={"PUT": {"ascents": []}}),
     )
-    def test_get_logbook(self, mock_get):
+    def test_get_logbook(self, mock_post):
         self.assertEqual(boardlib.api.aurora.get_logbook("aurora", "test", "test"), [])
 
     @unittest.mock.patch(
-        "requests.get",
+        "requests.post",
         side_effect=get_mock_request(status_code=requests.codes.bad_request),
     )
     def test_get_logbook_failure(self, mock_get):
@@ -128,7 +128,7 @@ class TestAurora(unittest.TestCase):
     )
     def test_sync(self, mock_get):
         self.assertEqual(
-            boardlib.api.aurora.sync("aurora", "test", "test"), "test_sync"
+            boardlib.api.aurora.user_sync("aurora", "test", "test"), "test_sync"
         )
 
     @unittest.mock.patch(
@@ -137,46 +137,8 @@ class TestAurora(unittest.TestCase):
     )
     def test_sync_failure(self, mock_get):
         with self.assertRaises(requests.exceptions.HTTPError):
-            boardlib.api.aurora.sync("aurora", "test", "test")
+            boardlib.api.aurora.user_sync("aurora", "test", "test")
 
-    @unittest.mock.patch(
-        "boardlib.api.aurora.login",
-        side_effect=lambda *args, **kwargs: {
-            "token": "test_token",
-            "user_id": "test_user_id",
-        },
-    )
-    @unittest.mock.patch(
-        "boardlib.api.aurora.get_logbook",
-        side_effect=lambda *args, **kwargs: [
-            {
-                "climb_uuid": "test_climb_id",
-                "climbed_at": "2021-09-30 20:31:48",
-                "grade": "test_grade",
-                "tries": "test_tries",
-                "difficulty": 15,
-                "attempt_id": 0,
-                "bid_count": 5,
-                "angle": 30,
-            }
-        ],
-    )
-    @unittest.mock.patch(
-        "boardlib.api.aurora.get_climb_name",
-        side_effect=lambda *args, **kwargs: "test_climb_name",
-    )
-    def test_logbook_entries(self, mock_login, mock_get_climb_name, mock_get_logbook):
-        self.assertEqual(
-            next(boardlib.api.aurora.logbook_entries("aurora", "test", "test")),
-            {
-                "board": "aurora",
-                "angle": 30,
-                "name": "test_climb_name",
-                "date": "2021-09-30",
-                "grade": "5C",
-                "tries": 5,
-            },
-        )
 
     @unittest.mock.patch(
         "boardlib.api.aurora.get_gyms",

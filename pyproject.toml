@@ -14,7 +14,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = ["bs4", "requests"]
+dependencies = ["bs4", "requests", "pandas"]
 
 [project.scripts]
 boardlib = "boardlib.__main__:main"
