@@ -378,7 +378,7 @@ def bids_logbook_entries(board, username, password, db_path=None):
             climb_name = get_climb_name_from_db(db_path, raw_entry["climb_uuid"])
         else:
             climb_name = get_climb_name(board, raw_entry["climb_uuid"])
-
+        
         yield {
             "uuid": raw_entry["uuid"],
             "user_id": raw_entry["user_id"],
@@ -425,9 +425,9 @@ def process_raw_ascent_entries(raw_ascents_entries, board, db_path, grades_dict,
             climb_name = get_climb_name(board, raw_entry["climb_uuid"])
             difficulty = None
             displayed_grade = None
-
+        
         logged_grade = convert_difficulty_to_grade(raw_entry["difficulty"], grades_dict, grade_type)
-
+        
         ascents_entries.append({
             "board": board,
             "angle": raw_entry["angle"],
@@ -559,7 +559,7 @@ def logbook_entries(board, username, password, grade_type="font", db_path=None):
         bids_summary = summarize_bids(bids_df, board)
     else:
         bids_summary = pd.DataFrame(columns=['climb_uuid', 'climb_name', 'date', 'is_mirror', 'angle', 'tries', 'board'])
-
+    
     if raw_ascents_entries:
         grades = get_grades(board)
         grades_dict = {grade['difficulty']: grade for grade in grades}
@@ -569,10 +569,10 @@ def logbook_entries(board, username, password, grade_type="font", db_path=None):
         ascents_df = pd.DataFrame(columns=['board', 'angle', 'climb_uuid', 'name', 'date', 'logged_grade', 'difficulty', 'displayed_grade', 'tries', 'is_mirror', 'comment'])
 
     final_logbook = combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, grade_type)
-
+    
     full_logbook_df = pd.DataFrame(final_logbook, columns=['board', 'angle', 'climb_name', 'date', 'logged_grade', 'displayed_grade', 'difficulty', 'tries', 'is_mirror', 'is_ascent', 'comment'])
     full_logbook_df['date'] = pd.to_datetime(full_logbook_df['date'])
-
+    
     full_logbook_df = full_logbook_df.groupby(['climb_name', 'is_mirror', 'angle']).apply(calculate_sessions_count).reset_index(drop=True)
     full_logbook_df = full_logbook_df.groupby(['climb_name', 'is_mirror', 'angle']).apply(calculate_tries_total).reset_index(drop=True)
     
