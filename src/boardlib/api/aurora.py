@@ -575,7 +575,7 @@ def logbook_entries(board, username, password, grade_type="font", db_path=None):
 
     full_logbook_df = full_logbook_df.groupby(['climb_name', 'is_mirror', 'angle']).apply(calculate_sessions_count).reset_index(drop=True)
     full_logbook_df = full_logbook_df.groupby(['climb_name', 'is_mirror', 'angle']).apply(calculate_tries_total).reset_index(drop=True)
-
+    
     full_logbook_df['is_repeat'] = full_logbook_df.duplicated(subset=['climb_name', 'is_mirror', 'angle'], keep='first')
     full_logbook_df = full_logbook_df.sort_values(by='date')
 
