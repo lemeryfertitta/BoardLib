@@ -372,7 +372,7 @@ def get_bids_logbook(board, token, user_id):
 def bids_logbook_entries(board, username, password, db_path=None):
     login_info = login(board, username, password)
     raw_entries = get_bids_logbook(board, login_info["token"], login_info["user_id"])
-
+    
     for raw_entry in raw_entries:
         if db_path:
             climb_name = get_climb_name_from_db(db_path, raw_entry["climb_uuid"])
@@ -397,7 +397,7 @@ def get_difficulty_from_db(database, climb_uuid, angle):
     conn = sqlite3.connect(database)
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT display_difficulty FROM climb_stats WHERE climb_uuid = ? AND angle = ?",
+        "SELECT display_difficulty FROM climb_stats WHERE climb_uuid = ? AND angle = ?", 
         (climb_uuid, angle)
     )
     row = cursor.fetchone()
@@ -439,7 +439,7 @@ def process_raw_ascent_entries(raw_ascents_entries, board, db_path, grades_dict,
             "displayed_grade": displayed_grade,
             "tries": raw_entry["attempt_id"] if raw_entry["attempt_id"] else raw_entry["bid_count"],
             "is_mirror": raw_entry["is_mirror"],
-            "comment": raw_entry["comment"]
+            "comment": raw_entry["comment"] 
         })
     return ascents_entries
 
@@ -463,14 +463,14 @@ def combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, gra
         ascent_climb_name = ascent_row['name']
         ascent_is_mirror = ascent_row['is_mirror']
         ascent_angle = ascent_row['angle']
-
+        
         bid_match = bids_summary[
-            (bids_summary['climb_uuid'] == ascent_climb_uuid) &
-            (bids_summary['date'] == ascent_date) &
+            (bids_summary['climb_uuid'] == ascent_climb_uuid) & 
+            (bids_summary['date'] == ascent_date) & 
             (bids_summary['is_mirror'] == ascent_is_mirror) &
             (bids_summary['angle'] == ascent_angle)
         ]
-
+        
         if not bid_match.empty:
             bid_row = bid_match.iloc[0]
             total_tries = ascent_row['tries'] + bid_row['tries']
@@ -510,7 +510,7 @@ def combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, gra
         else:
             displayed_grade = None
             difficulty = None
-
+        
         final_logbook.append({
             'board': bid_row['board'],
             'angle': bid_row['angle'],
@@ -546,10 +546,10 @@ def logbook_entries(board, username, password, grade_type="font", db_path=None):
     login_info = login(board, username, password)
     token = login_info["token"]
     user_id = login_info["user_id"]
-
+    
     bids_entries = list(bids_logbook_entries(board, username, password, db_path))
     raw_ascents_entries = get_logbook(board, token, user_id)
-
+    
     if not bids_entries and not raw_ascents_entries:
         return pd.DataFrame(columns=['board', 'angle', 'climb_name', 'date', 'logged_grade', 'displayed_grade', 'difficulty', 'tries', 'is_mirror', 'is_ascent', 'comment'])
 
@@ -578,7 +578,7 @@ def logbook_entries(board, username, password, grade_type="font", db_path=None):
     
     full_logbook_df['is_repeat'] = full_logbook_df.duplicated(subset=['climb_name', 'is_mirror', 'angle'], keep='first')
     full_logbook_df = full_logbook_df.sort_values(by='date')
-
+    
     return full_logbook_df
 
 def bids_logbook_entries_agg(board, token, user_id, db_path=None):
