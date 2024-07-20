@@ -613,7 +613,6 @@ def days_to_years_months_days(days):
     if delta.months > 0:
         parts.append(f"{delta.months} month{'s' if delta.months > 1 else ''}")
     parts.append(f"{delta.days} day{'s' if delta.days > 1 else ''}")
-
     return ' and '.join(parts)
 
 def combine_ascents_and_bids_agg(ascents_df, bids_summary):
@@ -657,7 +656,6 @@ def combine_ascents_and_bids_agg(ascents_df, bids_summary):
             'date': bid_row['date'],
             'tries': bid_row['tries']
         })
-
     return final_logbook
 
 def logbook_entries_agg(board, token, user_id, db_path=None, grade_type="font"):
@@ -694,5 +692,4 @@ def logbook_entries_agg(board, token, user_id, db_path=None, grade_type="font"):
     current_date = dt.now()
     aggregated_logbook['days'] = aggregated_logbook['date'].apply(lambda x: (current_date - pd.to_datetime(x)).days)
     aggregated_logbook['time_since'] = aggregated_logbook['days'].apply(days_to_years_months_days)
-
     return aggregated_logbook
