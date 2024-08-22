@@ -30,7 +30,7 @@ def logbook_entries(board, username, password, grade_type="font", database=None)
 
 
 def write_entries(output_file, entries, no_headers=False, fields=LOGBOOK_FIELDS):
-    cleaned_entries = [{k: v for k, v in entry.items() if k in fields} for entry in entries]
+    cleaned_entries = ({k: v for k, v in entry.items() if k in fields} for entry in entries)
     writer = csv.DictWriter(output_file, fieldnames=fields)
     if not no_headers:
         writer.writeheader()
