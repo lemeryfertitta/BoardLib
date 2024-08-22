@@ -476,6 +476,7 @@ def combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, gra
             total_tries = ascent_row['tries'] + bid_row['tries']
             final_logbook.append({
                 'climb_angle_uuid': climb_angle_uuid,
+                'climb_uuid': ascent_climb_uuid,
                 'board': ascent_row['board'],
                 'angle': ascent_row['angle'],
                 'climb_name': ascent_row['name'],
@@ -492,6 +493,7 @@ def combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, gra
         else:
             final_logbook.append({
                 'climb_angle_uuid': climb_angle_uuid,
+                'climb_uuid': ascent_climb_uuid,
                 'board': ascent_row['board'],
                 'angle': ascent_row['angle'],
                 'climb_name': ascent_row['name'],
@@ -506,7 +508,7 @@ def combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, gra
             })
 
     for _, bid_row in bids_summary.iterrows():
-        climb_uuid = f"{bid_row['climb_uuid']}-{bid_row['angle']}"
+        climb_angle_uuid = f"{bid_row['climb_uuid']}-{bid_row['angle']}"
         
         if db_path:
             difficulty = get_difficulty_from_db(db_path, bid_row["climb_uuid"], bid_row["angle"])
@@ -516,7 +518,8 @@ def combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, gra
             difficulty = None
         
         final_logbook.append({
-            'climb_uuid': climb_uuid,
+            'climb_angle_uuid': climb_angle_uuid,
+            'climb_uuid': bid_row['climb_uuid'],
             'board': bid_row['board'],
             'angle': bid_row['angle'],
             'climb_name': bid_row['climb_name'],
