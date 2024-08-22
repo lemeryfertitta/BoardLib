@@ -469,6 +469,7 @@ def combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, gra
             (bids_summary['angle'] == ascent_angle)
         ]
         
+        # Used for Climbdex to uniquely identify climbs at a particular angle
         climb_angle_uuid = f"{ascent_climb_uuid}-{ascent_angle}"
 
         if not bid_match.empty:
