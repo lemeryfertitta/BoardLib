@@ -30,10 +30,12 @@ def logbook_entries(board, username, password, grade_type="font", database=None)
 
 
 def write_entries(output_file, entries, no_headers=False, fields=LOGBOOK_FIELDS):
+    cleaned_entries = [{k: v for k, v in entry.items() if k in fields} for entry in entries]
     writer = csv.DictWriter(output_file, fieldnames=fields)
     if not no_headers:
         writer.writeheader()
-    writer.writerows(entries)
+    writer.writerows(cleaned_entries)
+
 
 
 def handle_database_command(args):
@@ -53,7 +55,7 @@ def handle_logbook_command(args):
     password = os.environ.get(env_var)
     if not password:
         password = getpass.getpass("Password: ")
-    entries = boardlib.api.aurora.logbook_entries(args.board, args.username, password, args.grade_type, args.database)
+    entries = boardlib.api.aurora.logbook_entries(args.board, args.username, password, args.grade_type, db_path=args.database)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as output_file:
