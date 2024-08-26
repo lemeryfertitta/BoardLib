@@ -55,7 +55,12 @@ def handle_logbook_command(args):
     password = os.environ.get(env_var)
     if not password:
         password = getpass.getpass("Password: ")
-    entries = boardlib.api.aurora.logbook_entries(args.board, args.username, password, args.grade_type, db_path=args.database)
+
+    login_info = boardlib.api.aurora.login(args.board, args.username, password)
+    token = login_info["token"]
+    user_id = login_info["user_id"]
+    
+    entries = boardlib.api.aurora.logbook_entries(args.board, user_id, token, args.grade_type, db_path=args.database)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as output_file:

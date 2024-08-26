@@ -551,12 +551,7 @@ def calculate_tries_total(group):
     return group
 
 
-def logbook_entries(board, username=None, password=None, token=None, user_id=None, grade_type="font", db_path=None):
-    if not (user_id and token): 
-        login_info = login(board, username, password)
-        token = login_info["token"]
-        user_id = login_info["user_id"]
-    
+def logbook_entries(board, user_id, token, grade_type="font", db_path=None):
     bids_entries = list(bids_logbook_entries(board, token, user_id, db_path))
     raw_ascents_entries = get_logbook(board, token, user_id)
     
