@@ -326,6 +326,36 @@ def save_ascent(
     return response.json()
 
 
+def save_attempt(
+    board,
+    token,
+    user_id,
+    climb_uuid,
+    angle,
+    is_mirror,
+    bid_count,
+    comment,
+    climbed_at,
+):  
+    uuid = generate_uuid()
+    response = requests.put(
+        f"{API_HOSTS[board]}/v1/bids/{uuid}",
+        headers={"authorization": f"Bearer {token}"},
+        json={
+            "user_id": user_id,
+            "uuid": uuid,
+            "climb_uuid": climb_uuid,
+            "angle": angle,
+            "is_mirror": is_mirror,
+            "bid_count": bid_count,
+            "comment": comment,
+            "climbed_at": climbed_at,
+        },
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 def save_climb(
     board,
     token,
