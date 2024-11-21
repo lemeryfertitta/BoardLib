@@ -31,7 +31,7 @@ To download your logbook entries for a given board:
 This outputs a CSV file with the following fields:
 
 ```json
-["board", "angle", "climb_name", "date", "logged_grade", "displayed_grade", "difficulty", "tries", "is_mirror", "sessions_count", "tries_total", "is_repeat", "is_ascent", "comment"]
+["board", "angle", "climb_name", "date", "logged_grade", "displayed_grade", "difficulty", "is_benchmark", "tries", "is_mirror", "sessions_count", "tries_total", "is_repeat", "is_ascent", "comment"]
 ```
 
 For example, the command
@@ -41,10 +41,10 @@ For example, the command
 would output a file named `tension.csv` with the following contents:
 
 ```
-board,angle,climb_name,date,logged_grade,displayed_grade,difficulty,tries,is_mirror,sessions_count,tries_total,is_repeat,is_ascent,comment
-tension,40,trash bag better,2024-06-17 16:21:23,V3,V3,16.0,3,False,1,3,False,True,
-tension,40,Bumble,2024-06-17 16:28:23,V3,V3,16.0,1,True,1,1,False,True,
-tension,40,sender2,2024-06-17 16:38:06,V5,V5,20.0,2,False,1,2,False,True,
+board,angle,climb_name,date,logged_grade,displayed_grade,difficulty,is_benchmark,tries,is_mirror,sessions_count,tries_total,is_repeat,is_ascent,comment
+tension,40,trash bag better,2024-06-17 16:21:23,V3,V3,16.0,False,3,False,1,3,False,True,
+tension,40,Bumble,2024-06-17 16:28:23,V3,V3,16.0,True,1,True,1,1,False,True,
+tension,40,sender2,2024-06-17 16:38:06,V5,V5,20.0,False,2,False,1,2,False,True,
 ...
 ```
 When no local database is provided, displayed_grade and difficulty remain empty.
