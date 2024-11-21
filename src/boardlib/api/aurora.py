@@ -434,6 +434,17 @@ def get_difficulty_from_db(database, climb_uuid, angle):
         return row[0]
     return None
 
+def get_benchmark_from_db(database, climb_uuid, angle):
+    conn = sqlite3.connect(database)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT benchmark_difficulty FROM climb_stats WHERE climb_uuid = ? AND angle = ?", 
+        (climb_uuid, angle)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] is not None if row else False
+
 
 def convert_difficulty_to_grade(difficulty, grades_dict, grade_type):
     grade_info = grades_dict.get(round(difficulty) if difficulty is not None else None, {})
@@ -449,10 +460,12 @@ def process_raw_ascent_entries(raw_ascents_entries, board, db_path, grades_dict,
             climb_name = get_climb_name_from_db(db_path, raw_entry["climb_uuid"])
             difficulty = get_difficulty_from_db(db_path, raw_entry["climb_uuid"], raw_entry["angle"])
             displayed_grade = convert_difficulty_to_grade(difficulty, grades_dict, grade_type)
+            is_benchmark = get_benchmark_from_db(db_path, raw_entry["climb_uuid"], raw_entry["angle"])
         else:
             climb_name = get_climb_name(board, raw_entry["climb_uuid"])
             difficulty = None
             displayed_grade = None
+            is_benchmark = None
         
         logged_grade = convert_difficulty_to_grade(raw_entry["difficulty"], grades_dict, grade_type)
         
@@ -465,6 +478,7 @@ def process_raw_ascent_entries(raw_ascents_entries, board, db_path, grades_dict,
             "logged_grade": logged_grade,
             "difficulty": difficulty,
             "displayed_grade": displayed_grade,
+            "is_benchmark": is_benchmark,
             "tries": raw_entry["attempt_id"] if raw_entry["attempt_id"] else raw_entry["bid_count"],
             "is_mirror": raw_entry["is_mirror"],
             "comment": raw_entry["comment"] 
@@ -515,6 +529,7 @@ def combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, gra
                 'logged_grade': ascent_row['logged_grade'],
                 'displayed_grade': ascent_row.get('displayed_grade', None),
                 'difficulty': ascent_row['difficulty'],
+                'is_benchmark': ascent_row.get('is_benchmark', None),
                 'tries': total_tries,
                 'is_mirror': ascent_row['is_mirror'],
                 'is_ascent': True,
@@ -532,6 +547,7 @@ def combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, gra
                 'logged_grade': ascent_row['logged_grade'],
                 'displayed_grade': ascent_row.get('displayed_grade', None),
                 'difficulty': ascent_row['difficulty'],
+                'is_benchmark': ascent_row['is_benchmark'],
                 'tries': ascent_row['tries'],
                 'is_mirror': ascent_row['is_mirror'],
                 'is_ascent': True,
@@ -544,9 +560,11 @@ def combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, gra
         if db_path:
             difficulty = get_difficulty_from_db(db_path, bid_row["climb_uuid"], bid_row["angle"])
             displayed_grade = convert_difficulty_to_grade(difficulty, grades_dict, grade_type)
+            is_benchmark = get_benchmark_from_db(db_path, bid_row["climb_uuid"], bid_row["angle"])
         else:
             displayed_grade = None
             difficulty = None
+            is_benchmark = None
         
         final_logbook.append({
             'climb_angle_uuid': climb_angle_uuid,
@@ -558,6 +576,7 @@ def combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, gra
             'logged_grade': None,
             'displayed_grade': displayed_grade,
             'difficulty': difficulty,
+            'is_benchmark': is_benchmark,
             'tries': bid_row['tries'],
             'is_mirror': bid_row['is_mirror'],
             'is_ascent': False,
@@ -586,7 +605,7 @@ def logbook_entries(board, user_id, token, grade_type="font", db_path=None):
     raw_ascents_entries = get_logbook(board, token, user_id)
     
     if not bids_entries and not raw_ascents_entries:
-        return pd.DataFrame(columns=['climb_uuid', 'board', 'angle', 'climb_name', 'date', 'logged_grade', 'displayed_grade', 'difficulty', 'tries', 'is_mirror', 'is_ascent', 'comment'])
+        return pd.DataFrame(columns=['climb_uuid', 'board', 'angle', 'climb_name', 'date', 'logged_grade', 'displayed_grade', 'difficulty', 'is_benchmark', 'tries', 'is_mirror', 'is_ascent', 'comment'])
 
     if bids_entries:
         bids_df = pd.DataFrame(bids_entries)
@@ -601,11 +620,11 @@ def logbook_entries(board, user_id, token, grade_type="font", db_path=None):
         ascents_entries = process_raw_ascent_entries(raw_ascents_entries, board, db_path, grades_dict, grade_type)
         ascents_df = pd.DataFrame(ascents_entries)
     else:
-        ascents_df = pd.DataFrame(columns=['board', 'angle', 'climb_uuid', 'name', 'date', 'logged_grade', 'difficulty', 'displayed_grade', 'tries', 'is_mirror', 'comment'])
+        ascents_df = pd.DataFrame(columns=['board', 'angle', 'climb_uuid', 'name', 'date', 'logged_grade', 'difficulty', 'displayed_grade', 'is_benchmark', 'tries', 'is_mirror', 'comment'])
 
     final_logbook = combine_ascents_and_bids(ascents_df, bids_summary, db_path, grades_dict, grade_type)
     
-    full_logbook_df = pd.DataFrame(final_logbook, columns=['climb_angle_uuid', 'board', 'angle', 'climb_name', 'date', 'logged_grade', 'displayed_grade', 'difficulty', 'tries', 'is_mirror', 'is_ascent', 'comment'])
+    full_logbook_df = pd.DataFrame(final_logbook, columns=['climb_angle_uuid', 'board', 'angle', 'climb_name', 'date', 'logged_grade', 'displayed_grade', 'is_benchmark', 'difficulty', 'tries', 'is_mirror', 'is_ascent', 'comment'])
     full_logbook_df['date'] = pd.to_datetime(full_logbook_df['date'])
     
     full_logbook_df = full_logbook_df.groupby(['climb_name', 'is_mirror', 'angle']).apply(calculate_sessions_count).reset_index(drop=True)

@@ -10,7 +10,7 @@ import boardlib.api.moon
 import boardlib.db.aurora
 
 
-LOGBOOK_FIELDS = ("board", "angle", "climb_name", "date", "logged_grade", "displayed_grade", "difficulty", "tries", "is_mirror", "sessions_count", "tries_total", "is_repeat", "is_ascent", "comment")
+LOGBOOK_FIELDS = ("board", "angle", "climb_name", "date", "logged_grade", "displayed_grade", "difficulty", "is_benchmark", "tries", "is_mirror", "sessions_count", "tries_total", "is_repeat", "is_ascent", "comment")
 
 
 def logbook_entries(board, username, password, grade_type="font", database=None):
