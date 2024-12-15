@@ -33,12 +33,25 @@ def download_database(board, output_file):
         headers={
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
         },
+        verify=False,
     )
     response.raise_for_status()
-    apk_file = io.BytesIO(response.content)
-    with zipfile.ZipFile(apk_file, "r") as zip_file:
-        with open(output_file, "wb") as output_file:
-            output_file.write(zip_file.read("assets/db.sqlite3"))
+    outer_apk = io.BytesIO(response.content)
+    
+    # Try the direct approach first (for older boards)
+    try:
+        with zipfile.ZipFile(outer_apk, "r") as zip_file:
+            with open(output_file, "wb") as output_file:
+                output_file.write(zip_file.read("assets/db.sqlite3"))
+    except KeyError:
+        # Kilter and maybe soon others now have a nested APK, 
+        # so we need to extract from the nested apk if the top level fails
+        outer_apk.seek(0)  # Reset the file pointer
+        with zipfile.ZipFile(outer_apk, "r") as outer_zip:
+            inner_apk_data = outer_zip.read(f"com.auroraclimbing.{APP_PACKAGE_NAMES[board]}.apk")
+            with zipfile.ZipFile(io.BytesIO(inner_apk_data), "r") as inner_zip:
+                with open(output_file, "wb") as output_file:
+                    output_file.write(inner_zip.read("assets/db.sqlite3"))
 
 
 def sync_shared_tables(board, database):
