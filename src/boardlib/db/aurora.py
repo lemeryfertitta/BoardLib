@@ -13,6 +13,7 @@ APP_PACKAGE_NAMES = {
     "decoy": "decoyboard",
     "grasshopper": "grasshopperboard",
     "kilter": "kilterboard",
+    "soill": "soillboard",
     "tension": "tensionboard2",
     "touchstone": "touchstoneboard",
 }
