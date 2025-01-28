@@ -182,6 +182,7 @@ def user_sync(
     :parm shared_syncs: list of {"table_name": <table_name>, "last_synchronized_at": <last_synchronized_at>}
         e.g. [{'table_name': 'climbs', 'last_synchronized_at': '2023-06-07 20:36:41.578003'}]
         It looks like the largest table (climbs) won't synchronize unless it has a shared_sync with last_synchronized_at set.
+    :parm user_syncs: Similiar to shared_syncs but for the user tables, also requires the user_id for each array item
     """
     response = requests.post(
         f"{API_HOSTS[board]}/v1/sync",
