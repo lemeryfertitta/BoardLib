@@ -12,6 +12,7 @@ HOST_BASES = {
     "decoy": "decoyboardapp",
     "grasshopper": "grasshopperboardapp",
     "kilter": "kilterboardapp",
+    "soill": "soillboardapp",
     "tension": "tensionboardapp2",
     "touchstone": "touchstoneboardapp",
 }
