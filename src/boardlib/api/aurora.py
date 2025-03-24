@@ -639,3 +639,55 @@ def logbook_entries(board, user_id, token, grade_type="font", db_path=None):
 
 
 
+def user_followers(board: str, token: str, user_id: int):
+    """
+    Get all accounts that follow the given user
+    :param board:
+    :param token:
+    :param user_id:
+    :return:
+        {
+            'users': [
+                {
+                    'id': int,
+                    'username': str,
+                    'name': optional str,
+                    'avatar': optional str,
+                },
+                ...
+            ]
+        }
+    """
+    response = requests.get(
+        f"{WEB_HOSTS[board]}/users/{user_id}/followers",
+        headers={"cookie": f"token={token}"},
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def user_followees(board: str, token: str, user_id: int):
+    """
+    Get all accounts the given user follows
+    :param board:
+    :param token:
+    :param user_id:
+    :return:
+        {
+            'users': [
+                {
+                    'id': int,
+                    'username': str,
+                    'name': optional str,
+                    'avatar': optional str,
+                },
+                ...
+            ]
+        }
+    """
+    response = requests.get(
+        f"{WEB_HOSTS[board]}/users/{user_id}/followees",
+        headers={"cookie": f"token={token}"},
+    )
+    response.raise_for_status()
+    return response.json()
