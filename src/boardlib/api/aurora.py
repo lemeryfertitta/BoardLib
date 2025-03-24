@@ -692,6 +692,40 @@ def user_followees(board: str, token: str, user_id: int):
     return response.json()
 
 
+def follow(board: str, token: str, your_user_id: int, id_to_follow: int):
+    """
+    Follow a user
+    """
+    response = requests.post(
+        f"{WEB_HOSTS[board]}/follows/save",
+        headers={"cookie": f"token={token}"},
+        data={
+            "followee_id": id_to_follow,
+             "follower_id": your_user_id,
+             "state": "pending",
+        }
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def unfollow(board: str, token: str, your_user_id: int, id_to_follow: int):
+    """
+    Unfollow a user
+    """
+    response = requests.post(
+        f"{WEB_HOSTS[board]}/follows/save",
+        headers={"cookie": f"token={token}"},
+        data={
+            "followee_id": id_to_follow,
+             "follower_id": your_user_id,
+             "state": "unfollowed",
+        }
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 def get_notifications(board: str, token: str, included_types: list[str] = None):
     """
     Get all notifications for the given user
