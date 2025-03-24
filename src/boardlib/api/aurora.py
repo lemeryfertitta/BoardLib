@@ -5,7 +5,6 @@ import bs4
 import requests
 import pandas as pd
 
-import boardlib.util.grades
 
 HOST_BASES = {
     "aurora": "auroraboardapp",
@@ -687,6 +686,36 @@ def user_followees(board: str, token: str, user_id: int):
     """
     response = requests.get(
         f"{WEB_HOSTS[board]}/users/{user_id}/followees",
+        headers={"cookie": f"token={token}"},
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def get_notifications(board: str, token: str, included_types: list[str] = None):
+    """
+    Get all notifications for the given user
+    :param board:
+    :param token:
+    :param included_types: a list of notification types to include in the response. Optional values:
+    :return:
+        {
+            'notifications': [
+                {
+                    '_type': str,
+                    ...
+                },
+                ...
+            ]
+        }
+    """
+
+    if included_types is None:
+        included_types = ['climbs', 'follows', 'users', 'ascents', 'likes']
+
+    response = requests.get(
+        f"{WEB_HOSTS[board]}/notifications",
+        params={t: 1 for t in included_types},
         headers={"cookie": f"token={token}"},
     )
     response.raise_for_status()
