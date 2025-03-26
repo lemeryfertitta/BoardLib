@@ -39,6 +39,9 @@ def write_entries(output_file, entries, no_headers=False, fields=LOGBOOK_FIELDS)
 
 
 def handle_database_command(args):
+    if (os.path.isdir(args.database_path)):
+        print("boardlib: error: download path should be a file, not a folder.")
+        return
     if not args.database_path.exists():
         args.database_path.parent.mkdir(parents=True, exist_ok=True)
         print(f"Downloading database to {args.database_path}")
