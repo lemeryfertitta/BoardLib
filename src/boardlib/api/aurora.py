@@ -5,7 +5,6 @@ import bs4
 import requests
 import pandas as pd
 
-import boardlib.util.grades
 
 HOST_BASES = {
     "aurora": "auroraboardapp",
@@ -639,3 +638,119 @@ def logbook_entries(board, user_id, token, grade_type="font", db_path=None):
 
 
 
+def user_followers(board: str, token: str, user_id: int):
+    """
+    Get all accounts that follow the given user
+    :param board:
+    :param token:
+    :param user_id:
+    :return:
+        {
+            'users': [
+                {
+                    'id': int,
+                    'username': str,
+                    'name': optional str,
+                    'avatar': optional str,
+                },
+                ...
+            ]
+        }
+    """
+    response = requests.get(
+        f"{WEB_HOSTS[board]}/users/{user_id}/followers",
+        headers={"cookie": f"token={token}"},
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def user_followees(board: str, token: str, user_id: int):
+    """
+    Get all accounts the given user follows
+    :param board:
+    :param token:
+    :param user_id:
+    :return:
+        {
+            'users': [
+                {
+                    'id': int,
+                    'username': str,
+                    'name': optional str,
+                    'avatar': optional str,
+                },
+                ...
+            ]
+        }
+    """
+    response = requests.get(
+        f"{WEB_HOSTS[board]}/users/{user_id}/followees",
+        headers={"cookie": f"token={token}"},
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def follow(board: str, token: str, your_user_id: int, id_to_follow: int):
+    """
+    Follow a user
+    """
+    response = requests.post(
+        f"{WEB_HOSTS[board]}/follows/save",
+        headers={"cookie": f"token={token}"},
+        data={
+            "followee_id": id_to_follow,
+             "follower_id": your_user_id,
+             "state": "pending",
+        }
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def unfollow(board: str, token: str, your_user_id: int, id_to_follow: int):
+    """
+    Unfollow a user
+    """
+    response = requests.post(
+        f"{WEB_HOSTS[board]}/follows/save",
+        headers={"cookie": f"token={token}"},
+        data={
+            "followee_id": id_to_follow,
+             "follower_id": your_user_id,
+             "state": "unfollowed",
+        }
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def get_notifications(board: str, token: str, included_types: list[str] = None):
+    """
+    Get all notifications for the given user
+    :param board:
+    :param token:
+    :param included_types: a list of notification types to include in the response. Optional values:
+    :return:
+        {
+            'notifications': [
+                {
+                    '_type': str,
+                    ...
+                },
+                ...
+            ]
+        }
+    """
+
+    if included_types is None:
+        included_types = ['climbs', 'follows', 'users', 'ascents', 'likes']
+
+    response = requests.get(
+        f"{WEB_HOSTS[board]}/notifications",
+        params={t: 1 for t in included_types},
+        headers={"cookie": f"token={token}"},
+    )
+    response.raise_for_status()
+    return response.json()
