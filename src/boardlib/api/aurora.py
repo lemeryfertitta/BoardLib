@@ -1,4 +1,5 @@
 import datetime
+import tqdm
 import uuid
 import sqlite3
 import bs4
@@ -403,7 +404,7 @@ def get_bids_logbook(board, token, user_id):
 def bids_logbook_entries(board, token, user_id, db_path=None):
     raw_entries = get_bids_logbook(board, token, user_id)
     
-    for raw_entry in raw_entries:
+    for raw_entry in tqdm.tqdm(raw_entries, ncols=100, desc="retrieving ascents"):
         if db_path:
             climb_name = get_climb_name_from_db(db_path, raw_entry["climb_uuid"])
         else:
@@ -454,7 +455,7 @@ def convert_difficulty_to_grade(difficulty, grades_dict, grade_type):
 
 def process_raw_ascent_entries(raw_ascents_entries, board, db_path, grades_dict, grade_type):
     ascents_entries = []
-    for raw_entry in raw_ascents_entries:
+    for raw_entry in tqdm.tqdm(raw_ascents_entries, ncols=100, desc="processing ascents"):
         if not raw_entry["is_listed"]:
             continue
         if db_path:

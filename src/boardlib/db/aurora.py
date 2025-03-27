@@ -2,6 +2,7 @@ import collections
 import io
 import sqlite3
 import zipfile
+import tqdm
 
 import requests
 
@@ -34,13 +35,17 @@ def download_database(board, output_file):
         headers={
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
         },
+        stream=True
     )
     response.raise_for_status()
+    total_size = int(response.headers.get("content-length", 0))
     apk_file = io.BytesIO(response.content)
-    with zipfile.ZipFile(apk_file, "r") as zip_file:
-        with open(output_file, "wb") as output_file:
-            output_file.write(zip_file.read("assets/db.sqlite3"))
-
+    with tqdm.tqdm(total=total_size, unit="B", ncols=100, unit_scale=True, desc="downloading database") as progress_bar:
+        with zipfile.ZipFile(apk_file, "r") as zip_file:
+            with open(output_file, "wb") as output_file:
+                for data in response.iter_content(1024):
+                    progress_bar.update(len(data))
+                    output_file.write(zip_file.read("assets/db.sqlite3"))
 
 def sync_shared_tables(board, database):
     """
