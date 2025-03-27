@@ -44,7 +44,7 @@ def handle_database_command(args):
         return
     if not args.database_path.exists():
         args.database_path.parent.mkdir(parents=True, exist_ok=True)
-        print(f"Downloading database to {args.database_path}")
+        print(f"Saving database to '{os.path.abspath(args.database_path)}'")
         boardlib.db.aurora.download_database(args.board, args.database_path)
 
     print(f"Synchronizing database at {args.database_path}")
@@ -54,15 +54,19 @@ def handle_database_command(args):
 
 
 def handle_logbook_command(args):
+    if (os.path.isdir(args.output)):
+        print("boardlib: error: download path should be a file, not a folder.")
+        return
     env_var = f"{args.board.upper()}_PASSWORD"
     password = os.environ.get(env_var)
     if not password:
+        print(f"{env_var} was not found in environment variables.")
         password = getpass.getpass("Password: ")
 
     login_info = boardlib.api.aurora.login(args.board, args.username, password)
     token = login_info["token"]
     user_id = login_info["user_id"]
-    
+
     entries = boardlib.api.aurora.logbook_entries(args.board, user_id, token, args.grade_type, db_path=args.database)
 
     if args.output:
