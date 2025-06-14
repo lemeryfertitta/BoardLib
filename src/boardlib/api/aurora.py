@@ -55,8 +55,14 @@ USER_TABLES = [
 
 def login(board, username, password):
     response = requests.post(
-        f"{API_HOSTS[board]}/v1/logins",
-        json={"username": username, "password": password},
+        f"{WEB_HOSTS[board]}/sessions",
+        json={
+            "username": username,
+            "password": password,
+            "tou": "accepted",
+            "pp":"accepted",
+            "ua":"app"
+        }
     )
     response.raise_for_status()
     return response.json()
@@ -72,8 +78,24 @@ def explore(board, token):
 
 
 def get_logbook(board, token, user_id):
-    sync_results = user_sync(board, token, user_id, tables=["ascents"])
-    return sync_results["PUT"].get("ascents", [])
+    response = requests.post(
+        f"{WEB_HOSTS[board]}/sync",
+        data={
+            "ascents": "1970-01-01 00:00:00.000000",
+        },
+        cookies={
+            "token": token
+        },
+        headers={
+            "Accep-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en-CA,en-US;q=0.9,en;q=0.8",
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Connection": "keep-alive"
+        }
+    )
+    response.raise_for_status()
+    return response.json()
 
 
 def get_grades(board):
@@ -603,7 +625,7 @@ def calculate_tries_total(group):
 
 def logbook_entries(board, user_id, token, grade_type="font", db_path=None):
     bids_entries = list(bids_logbook_entries(board, token, user_id, db_path))
-    raw_ascents_entries = get_logbook(board, token, user_id)
+    raw_ascents_entries = get_logbook(board, token)
     
     if not bids_entries and not raw_ascents_entries:
         return pd.DataFrame(columns=['climb_uuid', 'board', 'angle', 'climb_name', 'date', 'logged_grade', 'displayed_grade', 'difficulty', 'is_benchmark', 'tries', 'is_mirror', 'is_ascent', 'comment'])
