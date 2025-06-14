@@ -4,6 +4,8 @@ import sqlite3
 import bs4
 import requests
 import pandas as pd
+from itertools import zip_longest
+from urllib.parse import unquote
 
 
 HOST_BASES = {
@@ -78,25 +80,8 @@ def explore(board, token):
 
 
 def get_logbook(board, token, user_id):
-    response = requests.post(
-        f"{WEB_HOSTS[board]}/sync",
-        data={
-            "ascents": "1970-01-01 00:00:00.000000",
-        },
-        cookies={
-            "token": token
-        },
-        headers={
-            "Accep-Encoding": "gzip, deflate, br",
-            "Accept-Language": "en-CA,en-US;q=0.9,en;q=0.8",
-            "Accept": "application/json",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Connection": "keep-alive"
-        }
-    )
-    response.raise_for_status()
-    return response.json()
-
+    return user_sync_v2(board, token, tables=["ascents"]):
+    
 
 def get_grades(board):
     sync_results = shared_sync(board, tables=["difficulty_grades"])
@@ -161,6 +146,38 @@ def get_climb_name_from_db(database, climb_uuid):
         return row[0]
     return None
 
+def user_sync_v2(board, token, tables=[], sync_date=[]):
+    if board not in WEB_HOSTS:
+        raise ValueError("board url not found in global WEB_HOST variable")
+    if not isinstance(tables, list):
+        raise ValueError(f"Error: tables must be a list of strings | {tables}")
+    if not isinstance(sync_date, list):
+        raise ValueError(f"Error: sync_date must be a list of strings | {sync_date}")
+
+    payload = {}
+    for t, s in zip_longest(tables, sync_date):
+        if not isinstance(t, str):
+            raise ValueError(f"Error: table value must be a list of strings | {tables}")
+        if s and not isinstance(s, str):
+            raise ValueError(f"Error: table value must be a list of strings | {tables}")
+        payload[t] = unquote(s) if s else "1970-01-01 00:00:00.000000"
+    
+    response = requests.post(
+        f"{WEB_HOSTS[board]}/sync",
+        data=payload,
+        cookies={
+            "token": token
+        },
+        headers={
+            "Accep-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en-CA,en-US;q=0.9,en;q=0.8",
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Connection": "keep-alive"
+        }
+    )
+    response.raise_for_status()
+    return response.json()
 
 def user_sync(
     board,
