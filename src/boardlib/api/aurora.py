@@ -146,14 +146,12 @@ def get_climb_name_from_db(database, climb_uuid):
         return row[0]
     return None
 
-def user_sync_v2(board, token, tables=[], sync_date=[]):
-    if board not in WEB_HOSTS:
-        raise ValueError("board url not found in global WEB_HOST variable")
+def user_sync_v2(board, token, tables=[], sync_date=[], MAX_PAGES=5):
     if not isinstance(tables, list):
         raise ValueError(f"Error: tables must be a list of strings | {tables}")
     if not isinstance(sync_date, list):
         raise ValueError(f"Error: sync_date must be a list of strings | {sync_date}")
-
+    # Create payload for request
     payload = {}
     for t, s in zip_longest(tables, sync_date):
         if not isinstance(t, str):
@@ -161,23 +159,51 @@ def user_sync_v2(board, token, tables=[], sync_date=[]):
         if s and not isinstance(s, str):
             raise ValueError(f"Error: table value must be a list of strings | {tables}")
         payload[t] = unquote(s) if s else "1970-01-01 00:00:00.000000"
-    
-    response = requests.post(
-        f"{WEB_HOSTS[board]}/sync",
-        data=payload,
-        cookies={
-            "token": token
-        },
-        headers={
-            "Accep-Encoding": "gzip, deflate, br",
-            "Accept-Language": "en-CA,en-US;q=0.9,en;q=0.8",
-            "Accept": "application/json",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Connection": "keep-alive"
-        }
-    )
-    response.raise_for_status()
-    return response.json()
+    # Get data
+    result = {}
+    page_count = 0
+    while True:
+        # Request sync data
+        response = requests.post(
+            "https://tensionboardapp2.com/sync",
+            data=payload,
+            cookies={
+                "token": token
+            },
+            headers={
+                "Accep-Encoding": "gzip, deflate, br",
+                "Accept-Language": "en-CA,en-US;q=0.9,en;q=0.8",
+                "Accept": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Connection": "keep-alive"
+            }
+        )
+        response.raise_for_status()
+        # Update result dicitonary
+        response_dict = response.json()
+        if not isinstance(response_dict, dict):
+            raise ValueError(f"Error: response_dict must be a dict | {response_dict}")
+        for k, v in response_dict.items():
+            if k not in result or v == result.get(k):
+                result[k] = v
+                continue
+            result[k] = result[k] + v
+        if result.get("_complete"):
+            break
+        if page_count >= MAX_PAGES:
+            break
+        # Update payload with last sync date
+        user_syncs = response_dict.get("user_syncs", [])
+        for sync in user_syncs:
+            table_name = sync.get("table_name")
+            if table_name not in payload:
+                continue
+            last_synchronized_at = sync.get("last_synchronized_at")
+            if not last_synchronized_at:
+                continue
+            payload[table_name] = last_synchronized_at
+        page_count += 1
+    return result
 
 def user_sync(
     board,
