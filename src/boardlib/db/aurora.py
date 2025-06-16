@@ -42,7 +42,7 @@ def download_database(board, output_file):
             output_file.write(zip_file.read("assets/db.sqlite3"))
 
 
-def sync_shared_tables(board, database):
+def sync_shared_tables(board, token, database):
     """
     Syncs the public tables from the remote database to the local database.
     If the last sync is too old, it is possible that the remote will respond with an empty object.
@@ -56,15 +56,21 @@ def sync_shared_tables(board, database):
         result = connection.execute(
             "SELECT table_name, last_synchronized_at FROM shared_syncs"
         )
-        shared_syncs = [
-            {"table_name": table_name, "last_synchronized_at": last_synchronized_at}
-            for table_name, last_synchronized_at in result.fetchall()
-        ]
-        shared_sync_result = boardlib.api.aurora.shared_sync(
-            board, tables=boardlib.api.aurora.SHARED_TABLES, shared_syncs=shared_syncs
+        tables = []
+        syncs = []
+        for table_name, last_synchronized_at in result.fetchall():
+            tables.append(table_name)
+            syncs.append(last_synchronized_at)
+
+        shared_sync_result = boardlib.api.aurora.sync(
+            board, token, tables=tables, sync_date=syncs
         )
+
         row_counts = {}
-        for table_name, rows in shared_sync_result["PUT"].items():
+        for table_name, rows in shared_sync_result.items():
+            if table_name not in tables and table_name != "shared_syncs":
+                continue
+
             ROW_INSERTERS.get(table_name, insert_rows_default)(
                 connection, table_name, rows
             )
@@ -91,9 +97,11 @@ def insert_rows_climb_stats(connection, table_name, rows):
         row_dict = collections.defaultdict(
             lambda: None,
             row,
-            display_difficulty=row["benchmark_difficulty"]
-            if row.get("benchmark_difficulty")
-            else row["difficulty_average"],
+            display_difficulty=(
+                row["benchmark_difficulty"]
+                if row.get("benchmark_difficulty")
+                else row["difficulty_average"]
+            ),
         )
         row_list = insert_rows if row_dict["display_difficulty"] else delete_rows
         row_list.append(row_dict)
