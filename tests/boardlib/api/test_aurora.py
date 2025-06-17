@@ -10,11 +10,14 @@ from tests.boardlib.api.requests_mocks import get_mock_request, MockResponse
 class TestAurora(unittest.TestCase):
     @unittest.mock.patch(
         "requests.post",
-        side_effect=get_mock_request(json_data="test_login"),
+        side_effect=get_mock_request(
+            json_data={"session": {"token": "test", "user_id": 1234}},
+        ),
     )
     def test_login_success(self, mock_post):
         self.assertEqual(
-            boardlib.api.aurora.login("aurora", "test", "test"), "test_login"
+            boardlib.api.aurora.login("aurora", "test", "test"),
+            {"token": "test", "user_id": 1234},
         )
 
     @unittest.mock.patch(
@@ -42,10 +45,10 @@ class TestAurora(unittest.TestCase):
 
     @unittest.mock.patch(
         "requests.post",
-        side_effect=get_mock_request(json_data={"PUT": {"ascents": []}}),
+        side_effect=get_mock_request(json_data={"ascents": []}),
     )
     def test_get_logbook(self, mock_post):
-        self.assertEqual(boardlib.api.aurora.get_logbook("aurora", "test", "test"), [])
+        self.assertEqual(boardlib.api.aurora.get_ascents("aurora", "test"), [])
 
     @unittest.mock.patch(
         "requests.post",
@@ -53,7 +56,7 @@ class TestAurora(unittest.TestCase):
     )
     def test_get_logbook_failure(self, mock_get):
         with self.assertRaises(requests.exceptions.HTTPError):
-            boardlib.api.aurora.get_logbook("aurora", "test", "test")
+            boardlib.api.aurora.get_ascents("aurora", "test")
 
     @unittest.mock.patch(
         "requests.get",
@@ -139,14 +142,18 @@ class TestAurora(unittest.TestCase):
         with self.assertRaises(requests.exceptions.HTTPError):
             boardlib.api.aurora.user_sync("aurora", "test", "test")
 
-
     @unittest.mock.patch(
         "boardlib.api.aurora.get_gyms",
         side_effect=lambda *args, **kwargs: {
-                "gyms": [
-                    {'id': 1575, 'username': 'testuser', 'name': 'testgym', 'latitude': 51.43236, 'longitude': 6.7432}
-                ]
-            
+            "gyms": [
+                {
+                    "id": 1575,
+                    "username": "testuser",
+                    "name": "testgym",
+                    "latitude": 51.43236,
+                    "longitude": 6.7432,
+                }
+            ]
         },
     )
     def test_gym_boards(self, mock_get_gyms):
