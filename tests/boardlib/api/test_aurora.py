@@ -48,7 +48,7 @@ class TestAurora(unittest.TestCase):
         side_effect=get_mock_request(json_data={"ascents": []}),
     )
     def test_get_logbook(self, mock_post):
-        self.assertEqual(boardlib.api.aurora.get_logbook("aurora", "test"), [])
+        self.assertEqual(boardlib.api.aurora.get_ascents("aurora", "test"), [])
 
     @unittest.mock.patch(
         "requests.post",
@@ -56,7 +56,7 @@ class TestAurora(unittest.TestCase):
     )
     def test_get_logbook_failure(self, mock_get):
         with self.assertRaises(requests.exceptions.HTTPError):
-            boardlib.api.aurora.get_logbook("aurora", "test")
+            boardlib.api.aurora.get_ascents("aurora", "test")
 
     @unittest.mock.patch(
         "requests.get",

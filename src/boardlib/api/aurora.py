@@ -1,13 +1,13 @@
 import datetime
 import uuid
-import sqlite3
-import bs4
+
 import requests
 import pandas as pd
-from itertools import zip_longest
-from urllib.parse import unquote
 
+import boardlib.db.aurora
 
+BASE_SYNC_DATE = "1970-01-01 00:00:00.000000"
+DEFAULT_MAX_SYNC_PAGES = 100
 HOST_BASES = {
     "aurora": "auroraboardapp",
     "decoy": "decoyboardapp",
@@ -17,42 +17,9 @@ HOST_BASES = {
     "tension": "tensionboardapp2",
     "touchstone": "touchstoneboardapp",
 }
-API_HOSTS = {
-    board: f"https://api.{host_base}.com" for board, host_base in HOST_BASES.items()
-}
 WEB_HOSTS = {
     board: f"https://{host_base}.com" for board, host_base in HOST_BASES.items()
 }
-
-
-SHARED_TABLES = [
-    "products",
-    "product_sizes",
-    "holes",
-    "leds",
-    "products_angles",
-    "layouts",
-    "product_sizes_layouts_sets",
-    "placements",
-    "sets",
-    "placement_roles",
-    "climbs",
-    "climb_stats",
-    "beta_links",
-    "attempts",
-    "kits",
-]
-
-USER_TABLES = [
-    "users",
-    "walls",
-    "wall_expungements",
-    "draft_climbs",
-    "ascents",
-    "bids",
-    "tags",
-    "circuits",
-]
 
 
 def login(board, username, password):
@@ -72,15 +39,27 @@ def login(board, username, password):
 
 def explore(board, token):
     response = requests.get(
-        f"{API_HOSTS[board]}/explore",
-        headers={"authorization": f"Bearer {token}"},
+        f"{WEB_HOSTS[board]}/explore",
+        headers={"cookie": f"token={token}"},
     )
     response.raise_for_status()
     return response.json()
 
 
-def get_logbook(board, token):
-    return sync(board, token, tables=["ascents"]).get("ascents", [])
+def get_ascents(board, token):
+    return [
+        ascent
+        for sync_data in sync(board, {"ascents": BASE_SYNC_DATE}, token)
+        for ascent in sync_data.get("ascents", [])
+    ]
+
+
+def get_attempts(board, token):
+    return [
+        bid
+        for sync_data in sync(board, {"bids": BASE_SYNC_DATE}, token)
+        for bid in sync_data.get("bids", [])
+    ]
 
 
 def get_gyms(board):
@@ -99,87 +78,52 @@ def get_gyms(board):
             ]
         }
     """
-    response = requests.get(f"{API_HOSTS[board]}/v1/pins?types=gym")
+    response = requests.get(f"{WEB_HOSTS[board]}/pins?gyms=1")
     response.raise_for_status()
     return response.json()
 
 
 def get_user(board, token, user_id):
     response = requests.get(
-        f"{API_HOSTS[board]}/v2/users/{user_id}",
-        headers={"authorization": f"Bearer {token}"},
+        f"{WEB_HOSTS[board]}/users/{user_id}",
+        headers={"cookie": f"token={token}"},
     )
     response.raise_for_status()
     return response.json()
 
 
-def get_climb_stats(board, token, climb_id, angle):
-    response = requests.get(
-        f"{API_HOSTS[board]}/v1/climbs/{climb_id}/info",
-        headers={"authorization": f"Bearer {token}"},
-        params={"angle": angle},
-    )
-    response.raise_for_status()
-    return response.json()
+def sync(board, tables_and_sync_dates, token=None, max_pages=DEFAULT_MAX_SYNC_PAGES):
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+    if token:
+        headers["Cookie"] = f"token={token}"
 
-
-def get_climb_name(board, climb_id):
-    response = requests.get(
-        f"{WEB_HOSTS[board]}/climbs/{climb_id}",
-    )
-    response.raise_for_status()
-    return bs4.BeautifulSoup(response.text, "html.parser").find("h1").text
-
-
-def get_climb_name_from_db(database, climb_uuid):
-    conn = sqlite3.connect(database)
-    cursor = conn.cursor()
-    cursor.execute("SELECT name FROM climbs WHERE uuid = ?", (climb_uuid,))
-    row = cursor.fetchone()
-    conn.close()
-    if row:
-        return row[0]
-    return None
-
-
-def sync(board, token=None, tables=[], sync_date=[], max_pages=100):
-    payload = {}
-    for table, sync_date in zip(tables, sync_date):
-        payload[table] = sync_date if sync_date else "1970-01-01 00:00:00.000000"
-
-    result = {}
+    payload = dict(tables_and_sync_dates)
     page_count = 0
-    cookies = {} if not token else {"token": token}
-    while not result.get("_complete") and page_count < max_pages:
-        print(f"Retrieving sync results on page {page_count + 1}")
+    complete = False
+
+    while not complete and page_count < max_pages:
         response = requests.post(
             f"{WEB_HOSTS[board]}/sync",
             data=payload,
-            cookies=cookies,
-            headers={
-                "Accep-Encoding": "gzip, deflate, br",
-                "Accept-Language": "en-CA,en-US;q=0.9,en;q=0.8",
-                "Accept": "application/json",
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Connection": "keep-alive",
-            },
+            headers=headers,
         )
         response.raise_for_status()
         response_json = response.json()
-        for key, value in response_json.items():
-            if key not in result:
-                result[key] = value
-            else:
-                result[key] += value
+        complete = response_json.pop("_complete", False)
+        yield response_json
 
         # Update payload with last sync date
-        for user_sync in response_json.get("user_syncs", []):
-            table_name = user_sync.get("table_name")
-            last_synchronized_at = user_sync.get("last_synchronized_at")
-            if table_name not in payload or not last_synchronized_at:
-                continue
+        if token:
+            for user_sync in response_json.get("user_syncs", []):
+                table_name = user_sync.get("table_name")
+                last_synchronized_at = user_sync.get("last_synchronized_at")
+                if table_name not in payload or not last_synchronized_at:
+                    continue
 
-            payload[table_name] = last_synchronized_at
+                payload[table_name] = last_synchronized_at
 
         for shared_sync in response_json.get("shared_syncs", []):
             table_name = shared_sync.get("table_name")
@@ -190,12 +134,6 @@ def sync(board, token=None, tables=[], sync_date=[], max_pages=100):
             payload[table_name] = last_synchronized_at
 
         page_count += 1
-
-    if (page_count >= max_pages) and not result.get("_complete"):
-        print(
-            f"Reached maximum page count of {max_pages} without completing sync. Re-run the previous command to continue syncing."
-        )
-    return result
 
 
 def gym_boards(board):
@@ -209,7 +147,7 @@ def gym_boards(board):
 
 def download_image(board, image_filename, output_filename):
     response = requests.get(
-        f"{API_HOSTS[board]}/img/{image_filename}",
+        f"{WEB_HOSTS[board]}/img/{image_filename}",
     )
     response.raise_for_status()
     with open(output_filename, "wb") as output_file:
@@ -237,8 +175,8 @@ def save_ascent(
 ):
     uuid = generate_uuid()
     response = requests.put(
-        f"{API_HOSTS[board]}/v1/ascents/{uuid}",
-        headers={"authorization": f"Bearer {token}"},
+        f"{WEB_HOSTS[board]}/ascents/save/{uuid}",
+        headers={"Cookie": f"token={token}"},
         json={
             "user_id": user_id,
             "uuid": uuid,
@@ -271,8 +209,8 @@ def save_attempt(
 ):
     uuid = generate_uuid()
     response = requests.put(
-        f"{API_HOSTS[board]}/v1/bids/{uuid}",
-        headers={"authorization": f"Bearer {token}"},
+        f"{WEB_HOSTS[board]}/bids/save",
+        headers={"Cookie": f"token={token}"},
         json={
             "user_id": user_id,
             "uuid": uuid,
@@ -317,23 +255,19 @@ def save_climb(
         data["angle"] = angle
 
     response = requests.put(
-        f"{API_HOSTS[board]}/v2/climbs/{uuid}",
-        headers={"authorization": f"Bearer {token}"},
+        f"{WEB_HOSTS[board]}/climbs/save",
+        headers={"Cookie": f"token={token}"},
         json=data,
     )
     response.raise_for_status()
     return response.json()
 
 
-def get_bids_logbook(board, token):
-    return sync(board, token, tables=["bids"]).get("bids", [])
-
-
 def bids_logbook_entries(board, token, db_path):
-    raw_entries = get_bids_logbook(board, token)
+    raw_entries = get_attempts(board, token)
 
     for raw_entry in raw_entries:
-        climb_name = get_climb_name_from_db(db_path, raw_entry["climb_uuid"])
+        climb_name = boardlib.db.aurora.get_climb_name(db_path, raw_entry["climb_uuid"])
 
         yield {
             "climb_uuid": raw_entry["climb_uuid"],
@@ -348,44 +282,15 @@ def bids_logbook_entries(board, token, db_path):
         }
 
 
-def get_difficulty_from_db(database, climb_uuid, angle):
-    conn = sqlite3.connect(database)
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT display_difficulty FROM climb_stats WHERE climb_uuid = ? AND angle = ?",
-        (climb_uuid, angle),
-    )
-    row = cursor.fetchone()
-    conn.close()
-    if row:
-        return row[0]
-    return None
-
-
-def get_benchmark_from_db(database, climb_uuid, angle):
-    conn = sqlite3.connect(database)
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT benchmark_difficulty FROM climb_stats WHERE climb_uuid = ? AND angle = ?",
-        (climb_uuid, angle),
-    )
-    row = cursor.fetchone()
-    conn.close()
-    return row[0] is not None if row else False
-
-
 def process_raw_ascent_entries(raw_ascents_entries, board, db_path):
     ascents_entries = []
-    difficulty_mapping = get_difficulty_mapping_from_db(db_path)
+    difficulty_mapping = boardlib.db.aurora.get_difficulty_mapping(db_path)
     for raw_entry in raw_ascents_entries:
         if not raw_entry["is_listed"]:
             continue
 
-        climb_name = get_climb_name_from_db(db_path, raw_entry["climb_uuid"])
-        difficulty = get_difficulty_from_db(
-            db_path, raw_entry["climb_uuid"], raw_entry["angle"]
-        )
-        is_benchmark = get_benchmark_from_db(
+        climb_name = boardlib.db.aurora.get_climb_name(db_path, raw_entry["climb_uuid"])
+        difficulty, benchmark_difficulty = boardlib.db.aurora.get_difficulty(
             db_path, raw_entry["climb_uuid"], raw_entry["angle"]
         )
 
@@ -402,7 +307,7 @@ def process_raw_ascent_entries(raw_ascents_entries, board, db_path):
                     difficulty_mapping, raw_entry["difficulty"]
                 ),
                 "displayed_grade": difficulty_to_grade(difficulty_mapping, difficulty),
-                "is_benchmark": is_benchmark,
+                "is_benchmark": bool(benchmark_difficulty),
                 "tries": (
                     raw_entry["attempt_id"]
                     if raw_entry["attempt_id"]
@@ -438,7 +343,7 @@ def summarize_bids(bids_df, board):
 
 def combine_ascents_and_bids(ascents_df, bids_summary, db_path):
     final_logbook = []
-    difficulty_mapping = get_difficulty_mapping_from_db(db_path)
+    difficulty_mapping = boardlib.db.aurora.get_difficulty_mapping(db_path)
     for _, ascent_row in ascents_df.iterrows():
         ascent_date = ascent_row["date"].date()
         ascent_climb_uuid = ascent_row["climb_uuid"]
@@ -498,10 +403,7 @@ def combine_ascents_and_bids(ascents_df, bids_summary, db_path):
     for _, bid_row in bids_summary.iterrows():
         climb_angle_uuid = f"{bid_row['climb_uuid']}-{bid_row['angle']}"
 
-        difficulty = get_difficulty_from_db(
-            db_path, bid_row["climb_uuid"], bid_row["angle"]
-        )
-        is_benchmark = get_benchmark_from_db(
+        difficulty, benchmark_dificulty = boardlib.db.aurora.get_difficulty(
             db_path, bid_row["climb_uuid"], bid_row["angle"]
         )
 
@@ -515,7 +417,7 @@ def combine_ascents_and_bids(ascents_df, bids_summary, db_path):
                 "date": bid_row["date"],
                 "logged_grade": None,
                 "displayed_grade": difficulty_to_grade(difficulty_mapping, difficulty),
-                "is_benchmark": is_benchmark,
+                "is_benchmark": bool(benchmark_dificulty),
                 "tries": bid_row["tries"],
                 "is_mirror": bid_row["is_mirror"],
                 "is_ascent": False,
@@ -544,7 +446,7 @@ def calculate_tries_total(group):
 
 def logbook_entries(board, token, db_path):
     bids_entries = list(bids_logbook_entries(board, token, db_path))
-    raw_ascents_entries = get_logbook(board, token)
+    raw_ascents_entries = get_ascents(board, token)
 
     if not bids_entries and not raw_ascents_entries:
         return pd.DataFrame(
@@ -759,16 +661,6 @@ def get_notifications(board: str, token: str, included_types: list[str] = None):
     )
     response.raise_for_status()
     return response.json()
-
-
-def get_difficulty_mapping_from_db(database):
-    connection = sqlite3.connect(database)
-    return {
-        row[0]: row[1]
-        for row in connection.execute(
-            "SELECT difficulty, boulder_name FROM difficulty_grades"
-        )
-    }
 
 
 def difficulty_to_grade(difficulty_mapping, difficulty):

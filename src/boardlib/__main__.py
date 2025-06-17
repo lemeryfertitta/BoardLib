@@ -71,19 +71,23 @@ def handle_database_command(args):
         boardlib.db.aurora.download_database(args.board, args.database_path)
 
     print(f"Synchronizing database at {args.database_path}")
-    token = get_login_token(args.board, args.username)
-    row_counts = boardlib.db.aurora.sync_shared_tables(
-        args.board, token, args.database_path
-    )
-    for table_name, row_count in row_counts.items():
-        print(f"Synchronized {row_count} rows in {table_name}")
+    tables_and_sync_dates = boardlib.db.aurora.get_shared_syncs(args.database_path)
+    for sync_result in boardlib.api.aurora.sync(
+        args.board,
+        tables_and_sync_dates,
+        token=get_login_token(args.board, args.username),
+        max_pages=args.max_sync_pages,
+    ):
+        row_counts = boardlib.db.aurora.sync_shared_tables(
+            args.database_path, sync_result
+        )
+        for table_name, row_count in row_counts.items():
+            print(f"Synchronized {row_count} rows in {table_name}")
 
 
 def handle_logbook_command(args):
     token = get_login_token(args.board, args.username)
-    entries = boardlib.api.aurora.logbook_entries(
-        args.board, token, db_path=args.database
-    )
+    entries = boardlib.api.aurora.logbook_entries(args.board, token, args.database_path)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as output_file:
@@ -122,6 +126,13 @@ def add_database_parser(subparsers):
         type=pathlib.Path,
     )
     database_parser.add_argument("-u", "--username", help="Username", required=True)
+    database_parser.add_argument(
+        "-m",
+        "--max-sync-pages",
+        help=("Maximum number of times to call the sync API. Defaults to 100.",),
+        type=int,
+        default=boardlib.api.aurora.DEFAULT_MAX_SYNC_PAGES,
+    )
     database_parser.set_defaults(func=handle_database_command)
 
 
@@ -136,17 +147,17 @@ def add_logbook_parser(subparsers):
             boardlib.api.moon.BOARD_IDS.keys() | boardlib.api.aurora.HOST_BASES.keys()
         ),
     )
+    logbook_parser.add_argument(
+        "database_path",
+        help=(
+            "Path for the database file. Run the 'database' command first to download the database. ",
+        ),
+        type=pathlib.Path,
+    )
     logbook_parser.add_argument("-u", "--username", help="Username", required=True)
     logbook_parser.add_argument("-o", "--output", help="Output file", required=False)
     logbook_parser.add_argument(
         "--no-headers", help="Don't write headers", action="store_true", required=False
-    )
-    logbook_parser.add_argument(
-        "-d",
-        "--database",
-        help="Path to the local database (optional). Using a local database will significantly speed up the logbook generation and is required to retrieve 'displayed_grade' and 'difficulty'. Create a local database with the 'database' command.",
-        type=pathlib.Path,
-        required=False,
     )
     logbook_parser.set_defaults(func=handle_logbook_command)
 
