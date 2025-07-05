@@ -23,6 +23,15 @@ WEB_HOSTS = {
 
 
 def login(board, username, password):
+    headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Connection': 'keep-alive',
+        'Accept-Language': 'en-AU,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'User-Agent': 'Kilter%20Board/202 CFNetwork/1568.100.1 Darwin/24.0.0'
+    }
+    
     response = requests.post(
         f"{WEB_HOSTS[board]}/sessions",
         json={
@@ -32,6 +41,7 @@ def login(board, username, password):
             "pp": "accepted",
             "ua": "app",
         },
+        headers=headers,
     )
     response.raise_for_status()
     return response.json()["session"]
@@ -95,16 +105,23 @@ def get_user(board, token, user_id):
 def sync(board, tables_and_sync_dates, token=None, max_pages=DEFAULT_MAX_SYNC_PAGES):
     headers = {
         "Accept": "application/json",
+        'User-Agent': 'Kilter%20Board/202 CFNetwork/1568.100.1 Darwin/24.0.0',
         "Content-Type": "application/x-www-form-urlencoded",
     }
     if token:
         headers["Cookie"] = f"token={token}"
 
-    payload = dict(tables_and_sync_dates)
+    payload_dict = dict(tables_and_sync_dates)
     page_count = 0
     complete = False
 
     while not complete and page_count < max_pages:
+        # Build URL-encoded form data manually - Aurora expects this format!
+        params = []
+        for key, value in payload_dict.items():
+            params.append(f"{requests.utils.quote(str(key))}={requests.utils.quote(str(value))}")
+        payload = "&".join(params)
+
         response = requests.post(
             f"{WEB_HOSTS[board]}/sync",
             data=payload,
@@ -120,18 +137,18 @@ def sync(board, tables_and_sync_dates, token=None, max_pages=DEFAULT_MAX_SYNC_PA
             for user_sync in response_json.get("user_syncs", []):
                 table_name = user_sync.get("table_name")
                 last_synchronized_at = user_sync.get("last_synchronized_at")
-                if table_name not in payload or not last_synchronized_at:
+                if table_name not in payload_dict or not last_synchronized_at:
                     continue
 
-                payload[table_name] = last_synchronized_at
+                payload_dict[table_name] = last_synchronized_at
 
         for shared_sync in response_json.get("shared_syncs", []):
             table_name = shared_sync.get("table_name")
             last_synchronized_at = shared_sync.get("last_synchronized_at")
-            if table_name not in payload or not last_synchronized_at:
+            if table_name not in payload_dict or not last_synchronized_at:
                 continue
 
-            payload[table_name] = last_synchronized_at
+            payload_dict[table_name] = last_synchronized_at
 
         page_count += 1
 
