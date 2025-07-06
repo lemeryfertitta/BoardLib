@@ -72,6 +72,7 @@ def handle_database_command(args):
 
     print(f"Synchronizing database at {args.database_path}")
     tables_and_sync_dates = boardlib.db.aurora.get_shared_syncs(args.database_path)
+    row_counts_totals = {}
     for sync_result in boardlib.api.aurora.sync(
         args.board,
         tables_and_sync_dates,
@@ -82,7 +83,12 @@ def handle_database_command(args):
             args.database_path, sync_result
         )
         for table_name, row_count in row_counts.items():
-            print(f"Synchronized {row_count} rows in {table_name}")
+            row_counts_totals[table_name] = (
+                row_counts_totals.get(table_name, 0) + row_count
+            )
+            print(
+                f"Synchronized page of {table_name}. Page size: {row_count}. Cumulative: {row_counts_totals[table_name]}"
+            )
 
 
 def handle_logbook_command(args):

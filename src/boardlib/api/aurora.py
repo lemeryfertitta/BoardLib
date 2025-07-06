@@ -24,14 +24,14 @@ WEB_HOSTS = {
 
 def login(board, username, password):
     headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Connection': 'keep-alive',
-        'Accept-Language': 'en-AU,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'User-Agent': 'Kilter%20Board/202 CFNetwork/1568.100.1 Darwin/24.0.0'
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Connection": "keep-alive",
+        "Accept-Language": "en-AU,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "User-Agent": "Kilter%20Board/202 CFNetwork/1568.100.1 Darwin/24.0.0",
     }
-    
+
     response = requests.post(
         f"{WEB_HOSTS[board]}/sessions",
         json={
@@ -43,6 +43,10 @@ def login(board, username, password):
         },
         headers=headers,
     )
+    if response.status_code == requests.codes["unprocessable_entity"]:
+        raise ValueError(
+            "Invalid username or password. Please check your credentials and try again."
+        )
     response.raise_for_status()
     return response.json()["session"]
 
@@ -105,7 +109,7 @@ def get_user(board, token, user_id):
 def sync(board, tables_and_sync_dates, token=None, max_pages=DEFAULT_MAX_SYNC_PAGES):
     headers = {
         "Accept": "application/json",
-        'User-Agent': 'Kilter%20Board/202 CFNetwork/1568.100.1 Darwin/24.0.0',
+        "User-Agent": "Kilter%20Board/202 CFNetwork/1568.100.1 Darwin/24.0.0",
         "Content-Type": "application/x-www-form-urlencoded",
     }
     if token:
@@ -117,10 +121,10 @@ def sync(board, tables_and_sync_dates, token=None, max_pages=DEFAULT_MAX_SYNC_PA
 
     while not complete and page_count < max_pages:
         # Build URL-encoded form data manually - Aurora expects this format!
-        params = []
-        for key, value in payload_dict.items():
-            params.append(f"{requests.utils.quote(str(key))}={requests.utils.quote(str(value))}")
-        payload = "&".join(params)
+        payload = "&".join(
+            f"{requests.utils.quote(table)}={requests.utils.quote(sync_date)}"
+            for table, sync_date in payload_dict.items()
+        )
 
         response = requests.post(
             f"{WEB_HOSTS[board]}/sync",
