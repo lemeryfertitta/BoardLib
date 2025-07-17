@@ -34,10 +34,14 @@ def download_database(board, output_file):
         },
     )
     response.raise_for_status()
-    apk_file = io.BytesIO(response.content)
-    with zipfile.ZipFile(apk_file, "r") as zip_file:
-        with open(output_file, "wb") as output_file:
-            output_file.write(zip_file.read("assets/db.sqlite3"))
+
+    bundle_file = io.BytesIO(response.content)
+    with zipfile.ZipFile(bundle_file, "r") as zip_file:
+        apk_file = io.BytesIO(zip_file.read("com.auroraclimbing.kilterboard.apk"))
+
+        with zipfile.ZipFile(apk_file, "r") as main_zip:
+            with open(output_file, "wb") as output_file:
+                output_file.write(main_zip.read("assets/db.sqlite3"))
 
 
 def get_shared_syncs(database):
