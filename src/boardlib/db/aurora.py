@@ -25,8 +25,9 @@ def download_database(board, output_file):
     :param board: The board to download the database for.
     :param output_file: The file to write the database to.
     """
+    app_package_name = APP_PACKAGE_NAMES[board]
     response = requests.get(
-        f"https://d.apkpure.net/b/APK/com.auroraclimbing.{APP_PACKAGE_NAMES[board]}",
+        f"https://d.apkpure.net/b/APK/com.auroraclimbing.{app_package_name}",
         params={"version": "latest"},
         # Some user-agent is required, 403 if not included
         headers={
@@ -34,10 +35,19 @@ def download_database(board, output_file):
         },
     )
     response.raise_for_status()
-    apk_file = io.BytesIO(response.content)
-    with zipfile.ZipFile(apk_file, "r") as zip_file:
-        with open(output_file, "wb") as output_file:
-            output_file.write(zip_file.read("assets/db.sqlite3"))
+
+    bundle_file = io.BytesIO(response.content)
+    with zipfile.ZipFile(bundle_file, "r") as zip_file:
+        try: 
+            apk_file = io.BytesIO(zip_file.read(f"com.auroraclimbing.{app_package_name}.apk"))
+        except KeyError:
+            # Fallback to old APK directory structure to support older versions
+            with open(output_file, "wb") as output_file:
+                output_file.write(zip_file.read("assets/db.sqlite3"))
+        else:
+            with zipfile.ZipFile(apk_file, "r") as main_zip:
+                with open(output_file, "wb") as output_file:
+                    output_file.write(main_zip.read("assets/db.sqlite3"))
 
 
 def get_shared_syncs(database):
