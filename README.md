@@ -36,17 +36,17 @@ This outputs a CSV file with the following fields:
 ["board", "angle", "climb_name", "date", "logged_grade", "displayed_grade", "is_benchmark", "tries", "is_mirror", "sessions_count", "tries_total", "is_repeat", "is_ascent", "comment"]
 ```
 
+#### Supported Boards 🛹
+
+Currently all [Aurora Climbing](https://auroraclimbing.com/) based boards (Kilter, Tension, etc.). The [Moonboard](https://moonboard.com/) was previously supported but is currently broken due to a website update. Contributions are welcome.
+
 ### Images 📸
 
-First, use the `database` commmand to downlaod the SQLite database file for the board of interest. Then download the images for a given board:
+First, use the `database` command to download the SQLite database file for the board of interest. Then download the images for a given board:
 
 `boardlib images <board_name> <database_file> <output_directory>`
 
 This will fetch all of the images for the given board and place them in `output_directory`.
-
-#### Supported Boards 🛹
-
-Currently all [Aurora Climbing](https://auroraclimbing.com/) based boards (Kilter, Tension, etc.). The [Moonboard](https://moonboard.com/) was previously supported but is currently broken due to a website update. Contributions are welcome.
 
 ## Bugs 🐞 and Feature Requests 🗒️
 
