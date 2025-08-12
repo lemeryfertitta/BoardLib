@@ -184,6 +184,11 @@ def download_images(board, database_path, output_directory):
         output_path = os.path.join(output_directory, image_filename)
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
+        # Skip download if file already exists
+        if os.path.exists(output_path):
+            print(f"Skipping {image_filename} (already exists)")
+            continue
+        
         response = requests.get(
             f"{api_host}/img/{image_filename}",
         )
