@@ -1,4 +1,5 @@
 import datetime
+import os
 import uuid
 
 import requests
@@ -166,13 +167,30 @@ def gym_boards(board):
         }
 
 
-def download_image(board, image_filename, output_filename):
-    response = requests.get(
-        f"{WEB_HOSTS[board]}/img/{image_filename}",
-    )
-    response.raise_for_status()
-    with open(output_filename, "wb") as output_file:
-        output_file.write(response.content)
+def download_images(board, database_path, output_directory):
+    """
+    Download all images for a given board to the specified directory.
+    
+    :param board: The board name
+    :param database_path: Path to the SQLite database file
+    :param output_directory: Directory to save the downloaded images
+    """    
+    os.makedirs(output_directory, exist_ok=True)
+    image_filenames = boardlib.db.aurora.get_image_filenames(database_path)
+    api_host = f"https://api.{HOST_BASES[board]}.com"
+    
+    for image_filename in image_filenames:
+        # Create subdirectories if needed (e.g., for product_sizes_layouts_sets/1-v4.png)
+        output_path = os.path.join(output_directory, image_filename)
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
+        response = requests.get(
+            f"{api_host}/img/{image_filename}",
+        )
+        response.raise_for_status()
+        
+        with open(output_path, "wb") as output_file:
+            output_file.write(response.content)
 
 
 def generate_uuid():
