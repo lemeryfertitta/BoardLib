@@ -65,11 +65,16 @@ def handle_database_command(args):
     if os.path.isdir(args.database_path):
         print("boardlib: error: download path should be a file, not a folder.")
         return
+
     if not args.database_path.exists():
         args.database_path.parent.mkdir(parents=True, exist_ok=True)
         print(f"Downloading database to {args.database_path}")
         boardlib.db.aurora.download_database(args.board, args.database_path)
 
+    if not args.username:
+        print("No username provided, skipping database synchronization.")
+        return
+    
     print(f"Synchronizing database at {args.database_path}")
     tables_and_sync_dates = boardlib.db.aurora.get_shared_syncs(args.database_path)
     row_counts_totals = {}
@@ -113,6 +118,12 @@ def handle_logbook_command(args):
         )
 
 
+def handle_images_command(args):
+    print(f"Downloading images for {args.board} to {args.output_directory}")
+    boardlib.api.aurora.download_images(args.board, args.database_path, args.output_directory)
+    print("Images downloaded successfully")
+
+
 def add_database_parser(subparsers):
     database_parser = subparsers.add_parser(
         "database", help="Download and sync the database"
@@ -131,7 +142,7 @@ def add_database_parser(subparsers):
         ),
         type=pathlib.Path,
     )
-    database_parser.add_argument("-u", "--username", help="Username", required=True)
+    database_parser.add_argument("-u", "--username", help="Username. If not provided, the database will not be synchronized", required=False)
     database_parser.add_argument(
         "-m",
         "--max-sync-pages",
@@ -168,11 +179,36 @@ def add_logbook_parser(subparsers):
     logbook_parser.set_defaults(func=handle_logbook_command)
 
 
+def add_images_parser(subparsers):
+    images_parser = subparsers.add_parser(
+        "images", help="Download all images for a board"
+    )
+    images_parser.add_argument(
+        "board",
+        help="Board name",
+        choices=sorted(boardlib.api.aurora.HOST_BASES.keys()),
+    )
+    images_parser.add_argument(
+        "database_path",
+        help=(
+            "Path for the database file. Run the 'database' command first to download the database."
+        ),
+        type=pathlib.Path,
+    )
+    images_parser.add_argument(
+        "output_directory",
+        help="Directory to save the downloaded images",
+        type=pathlib.Path,
+    )
+    images_parser.set_defaults(func=handle_images_command)
+
+
 def main():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
     add_logbook_parser(subparsers)
     add_database_parser(subparsers)
+    add_images_parser(subparsers)
     args = parser.parse_args()
     args.func(args)
 

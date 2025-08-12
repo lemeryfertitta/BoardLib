@@ -165,3 +165,11 @@ def get_climb_name(database, climb_uuid):
             "SELECT name FROM climbs WHERE uuid = ?", (climb_uuid,)
         )
         return next(results, [None])[0]
+
+
+def get_image_filenames(database):
+    with sqlite3.connect(database) as connection:
+        results = connection.execute(
+            "SELECT image_filename FROM product_sizes_layouts_sets WHERE image_filename IS NOT NULL"
+        )
+        return [row[0] for row in results]
