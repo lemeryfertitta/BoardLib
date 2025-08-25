@@ -11,7 +11,13 @@ class TestMoon(unittest.TestCase):
     @unittest.mock.patch(
         "requests.Session",
         side_effect=lambda: MockSession(
-            MockResponse(text="<input value='token'></input>"), MockResponse()
+            MockResponse(text="""
+                <form id="frmLogin">
+                    <input name="__RequestVerificationToken" type="hidden" value="test_token" />
+                    <input name="form_key" type="hidden" value="test_form_key" />
+                </form>
+            """), 
+            MockResponse(text="<div>Success</div>")
         ),
     )
     def test_get_session_success(self, mock_session):
@@ -167,8 +173,13 @@ class TestMoon(unittest.TestCase):
     @unittest.mock.patch(
         "requests.Session",
         side_effect=lambda: MockSession(
-            MockResponse(text="<input value='token'></input>"),
-            MockResponse(),
+            MockResponse(text="""
+                <form id="frmLogin">
+                    <input name="__RequestVerificationToken" type="hidden" value="test_token" />
+                    <input name="form_key" type="hidden" value="test_form_key" />
+                </form>
+            """),
+            MockResponse(text="<div>Success</div>"),
             MockResponse(
                 json_data={
                     "Data": [{"Id": "test_id"}],
@@ -203,6 +214,7 @@ class TestMoon(unittest.TestCase):
                 "name": "test_name",
                 "date": "2023-09-05",
                 "tries": "1",
+                "is_mirror": False,
             },
         )
 

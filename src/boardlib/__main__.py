@@ -51,12 +51,15 @@ def write_entries(output_file, entries, no_headers=False, fields=LOGBOOK_FIELDS)
     writer.writerows(cleaned_entries)
 
 
-def get_login_token(board, username):
+def get_password(board):
     env_var = f"{board.upper()}_PASSWORD"
     password = os.environ.get(env_var)
     if not password:
         password = getpass.getpass("Password: ")
+    return password
 
+def get_aurora_login_token(board, username):
+    password = get_password(board)
     login_info = boardlib.api.aurora.login(board, username, password)
     return login_info["token"]
 
@@ -81,7 +84,7 @@ def handle_database_command(args):
     for sync_result in boardlib.api.aurora.sync(
         args.board,
         tables_and_sync_dates,
-        token=get_login_token(args.board, args.username),
+        token=get_aurora_login_token(args.board, args.username),
         max_pages=args.max_sync_pages,
     ):
         row_counts = boardlib.db.aurora.sync_shared_tables(
@@ -97,14 +100,23 @@ def handle_database_command(args):
 
 
 def handle_logbook_command(args):
-    token = get_login_token(args.board, args.username)
-    entries = boardlib.api.aurora.logbook_entries(args.board, token, args.database_path)
+    if args.board.startswith("moon"):
+        entries = boardlib.api.moon.logbook_entries(
+            args.board, args.username, get_password(args.board)
+        )
+    else:
+        if not args.database_path or not args.database_path.exists():
+            print(f"boardlib: error: valid -d/--database-path is required for {args.board}")
+            return
+        
+        token = get_aurora_login_token(args.board, args.username)
+        entries = boardlib.api.aurora.logbook_entries(args.board, token, args.database_path).to_dict(orient="records")
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as output_file:
             write_entries(
                 output_file,
-                entries.to_dict(orient="records"),
+                entries,
                 args.no_headers,
                 fields=LOGBOOK_FIELDS,
             )
@@ -112,7 +124,7 @@ def handle_logbook_command(args):
         sys.stdout.reconfigure(encoding="utf-8")
         write_entries(
             sys.stdout,
-            entries.to_dict(orient="records"),
+            entries,
             args.no_headers,
             fields=LOGBOOK_FIELDS,
         )
@@ -165,11 +177,12 @@ def add_logbook_parser(subparsers):
         ),
     )
     logbook_parser.add_argument(
-        "database_path",
+        "-d", "--database-path",
         help=(
-            "Path for the database file. Run the 'database' command first to download the database. ",
+            "Path for the database file. Run the 'database' command first to download the database. Required for Aurora-based boards.",
         ),
         type=pathlib.Path,
+        required=False,
     )
     logbook_parser.add_argument("-u", "--username", help="Username", required=True)
     logbook_parser.add_argument("-o", "--output", help="Output file", required=False)
