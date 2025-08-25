@@ -14,7 +14,7 @@ Use `boardlib --help` for a full list of supported board names and feature flags
 
 To download the climb database for a given board:
 
-`boardlib database <board_name> <database_path> --username <username>`
+`boardlib database <board_name> <database_path> --username <board_username>`
 
 This command will first download a [sqlite](https://www.sqlite.org/index.html) database file to the given path. After downloading, the database will then use the sync API to synchronize it with the latest available data. The database will only contain the "shared," public data. User data is not synchronized. If a database already exists as `database_path`, the command will skip the download step and only perform the synchronization.
 
@@ -28,7 +28,7 @@ All [Aurora Climbing](https://auroraclimbing.com/) based boards (Kilter, Tension
 
 First, use the `database` command to download the SQLite database file for the board of interest. Then download your logbook entries for a given board:
 
-`boardlib logbook <board_name> <database_file> --username=<username> --output=<output_file_name>`
+`boardlib logbook <board_name> <database_file> --username=<board_username> --output=<output_file_name>`
 
 This outputs a CSV file with the following fields:
 
