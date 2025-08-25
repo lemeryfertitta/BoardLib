@@ -26,9 +26,9 @@ All [Aurora Climbing](https://auroraclimbing.com/) based boards (Kilter, Tension
 
 ### Logbooks 📚
 
-First, use the `database` command to download the SQLite database file for the board of interest. Then download your logbook entries for a given board:
+First, use the `database` command to download the SQLite database file for the board of interest. The database is not required for any version of the Moonboard. Then download your logbook entries for a given board:
 
-`boardlib logbook <board_name> <database_file> --username=<board_username> --output=<output_file_name>`
+`boardlib logbook <board_name> --username=<board_username> --output=<output_file_name> --database-path=<database_path>`
 
 This outputs a CSV file with the following fields:
 
@@ -38,7 +38,7 @@ This outputs a CSV file with the following fields:
 
 #### Supported Boards 🛹
 
-Currently all [Aurora Climbing](https://auroraclimbing.com/) based boards (Kilter, Tension, etc.). The [Moonboard](https://moonboard.com/) was previously supported but is currently broken due to a website update. Contributions are welcome.
+Currently all [Aurora Climbing](https://auroraclimbing.com/) based boards (Kilter, Tension, etc.) and the [Moonboard](https://moonboard.com/). The Moonboard web API currently appears to be broken for some iterations of the board, including 2016 and 2024.
 
 ### Images 📸
 
@@ -47,6 +47,10 @@ First, use the `database` command to download the SQLite database file for the b
 `boardlib images <board_name> <database_file> <output_directory>`
 
 This will fetch all of the images for the given board and place them in `output_directory`.
+
+#### Supported Boards 🛹
+
+All [Aurora Climbing](https://auroraclimbing.com/) based boards (Kilter, Tension, etc.).
 
 ## Bugs 🐞 and Feature Requests 🗒️
 

@@ -20,6 +20,7 @@ class MockResponse:
 class MockSession:
     def __init__(self, *responses):
         self.response_iterator = iter(responses)
+        self.headers = {}
 
     def get(self, *args, **kwargs):
         return next(self.response_iterator)

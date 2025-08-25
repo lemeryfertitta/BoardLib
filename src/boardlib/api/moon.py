@@ -41,6 +41,7 @@ ATTEMPTS_TO_COUNT = {
     "2nd try": "2",
     "3rd try": "3",
     "more than 3 tries": "4+",
+    "Project": "project"
 }
 
 IDS_TO_ANGLES = {
@@ -51,22 +52,39 @@ IDS_TO_ANGLES = {
 
 def get_session(username, password):
     session = requests.Session()
-    home_page_response = session.get(HOST)
-    home_page_response.raise_for_status()
-    form_token = bs4.BeautifulSoup(home_page_response.text, "html.parser").find(
-        "input"
-    )["value"]
+    
+    login_page = session.get(f"{HOST}/account/login")
+    login_page.raise_for_status()
+    
+    loging_page_soup = bs4.BeautifulSoup(login_page.text, "html.parser")
+    form = loging_page_soup.find("form", {"id": "frmLogin"})
+    verification_token = form.find("input", {"name": "__RequestVerificationToken"})["value"]
+    form_key = form.find("input", {"name": "form_key"})["value"]
+    
     login_response = session.post(
-        f"{HOST}/Account/Login",
+        f"{HOST}/Account/login",
         data={
             "Login.Username": username,
             "Login.Password": password,
-            "__RequestVerificationToken": form_token,
-            "X-Requested-With": "XMLHttpRequest",
+            "__RequestVerificationToken": verification_token,
+            "form_key": form_key,
         },
-        headers={"X-Requested-With": "XMLHttpRequest"},
+        headers={
+        'Referer': f'{HOST}/account/login',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        }
     )
     login_response.raise_for_status()
+    
+    # Check if login was successful by looking for error messages
+    login_response_soup = bs4.BeautifulSoup(login_response.text, "html.parser")
+    error_selectors = ('.validation-summary-errors', '.field-validation-error', '.text-danger', '.alert-danger')
+    for selector in error_selectors:
+        for element in login_response_soup.select(selector):
+            error_text = element.get_text().strip()
+            if error_text and 'username' in error_text.lower() and 'password' in error_text.lower():
+                raise ValueError(f"Login failed: {error_text}")
+    
     return session
 
 
@@ -142,23 +160,31 @@ def logbook_entries(board, username, password, grade_type="font"):
     session = get_session(username, password)
     entries = raw_logbook_entries(session, board)
     for entry in entries:
-        font_grade = entry["Problem"]["UserGrade"]
+        font_logged_grade = entry["Problem"]["UserGrade"]
+        font_displayed_grade = entry["Problem"]["Grade"]
         yield {
             "board": board,
             "angle": IDS_TO_ANGLES[board][
                 entry["Problem"]["MoonBoardConfiguration"]["Id"]
             ],
-            "name": entry["Problem"]["Name"],
+            "climb_name": entry["Problem"]["Name"],
             "date": datetime.datetime.strptime(entry["DateClimbedAsString"], "%d %b %Y")
             .date()
             .isoformat(),
-            "grade": (
-                font_grade
+            "displayed_grade": (
+                font_displayed_grade
                 if grade_type == "font"
-                else boardlib.util.grades.FONT_TO_HUECO[font_grade]
+                else boardlib.util.grades.FONT_TO_HUECO[font_displayed_grade]
             ),
+            "logged_grade": (
+                font_logged_grade
+                if grade_type == "font"
+                else boardlib.util.grades.FONT_TO_HUECO[font_logged_grade]
+            ),
+            "is_benchmark": entry["Problem"]["IsBenchmark"],
             "tries": ATTEMPTS_TO_COUNT[entry["NumberOfTries"]],
-            "is_mirror" : False
+            "is_mirror" : False,
+            "comment": entry["Comment"]
         }
 
 
