@@ -1,4 +1,5 @@
 import datetime
+import time
 
 import bs4
 import requests
@@ -94,6 +95,8 @@ def logbook_pages(session, board, page_size=40, page=1, angle=None):
 
     # Moon2024 requires Configuration filter for each angle
     if board == "moon2024" and angle is not None:
+        if angle not in ANGLES_TO_IDS[board]:
+            raise ValueError(f"Invalid angle {angle} for board {board}. Valid angles: {list(ANGLES_TO_IDS[board].keys())}")
         config_id = ANGLES_TO_IDS[board][angle]
         filter_str += f"~and~Configuration~eq~'{config_id}'"
 
@@ -123,6 +126,8 @@ def raw_logbook_entries_for_page(session, board, entry_id, page_size=30, page=1,
 
     # Moon2024 requires Configuration filter for each angle
     if board == "moon2024" and angle is not None:
+        if angle not in ANGLES_TO_IDS[board]:
+            raise ValueError(f"Invalid angle {angle} for board {board}. Valid angles: {list(ANGLES_TO_IDS[board].keys())}")
         config_id = ANGLES_TO_IDS[board][angle]
         filter_str += f"~and~Configuration~eq~'{config_id}'"
 
@@ -149,12 +154,16 @@ def raw_logbook_entries_for_page(session, board, entry_id, page_size=30, page=1,
 def raw_logbook_entries(session, board, logbook_page_size=40, entry_page_size=30):
     # Moon2024 requires querying each angle separately
     if board == "moon2024":
-        for angle in ANGLES_TO_IDS[board].keys():
+        angles = list(ANGLES_TO_IDS[board].keys())
+        for i, angle in enumerate(angles):
             logbook = logbook_pages(session, board, page_size=logbook_page_size, angle=angle)
             for entry in logbook:
                 yield from raw_logbook_entries_for_page(
                     session, board, entry["Id"], page_size=entry_page_size, angle=angle
                 )
+            # Add delay between angles to prevent API throttling (except after last angle)
+            if i < len(angles) - 1:
+                time.sleep(0.5)
     else:
         logbook = logbook_pages(session, board, page_size=logbook_page_size)
         for entry in logbook:
