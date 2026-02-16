@@ -150,7 +150,7 @@ def add_database_parser(subparsers):
         help=(
             "Path for the database file. "
             "If the file does not exist, the database will be downloaded to the given path and synchronized. "
-            "If it does exist, the database will just be synchronized",
+            "If it does exist, the database will just be synchronized"
         ),
         type=pathlib.Path,
     )
@@ -158,7 +158,7 @@ def add_database_parser(subparsers):
     database_parser.add_argument(
         "-m",
         "--max-sync-pages",
-        help=("Maximum number of times to call the sync API. Defaults to 100.",),
+        help=("Maximum number of times to call the sync API. Defaults to 100."),
         type=int,
         default=boardlib.api.aurora.DEFAULT_MAX_SYNC_PAGES,
     )
@@ -179,7 +179,7 @@ def add_logbook_parser(subparsers):
     logbook_parser.add_argument(
         "-d", "--database-path",
         help=(
-            "Path for the database file. Run the 'database' command first to download the database. Required for Aurora-based boards.",
+            "Path for the database file. Run the 'database' command first to download the database. Required for Aurora-based boards."
         ),
         type=pathlib.Path,
         required=False,
