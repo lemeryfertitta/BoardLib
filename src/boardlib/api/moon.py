@@ -1,4 +1,5 @@
 import datetime
+import time
 
 import bs4
 import requests
@@ -88,7 +89,17 @@ def get_session(username, password):
     return session
 
 
-def logbook_pages(session, board, page_size=40, page=1):
+def logbook_pages(session, board, page_size=40, page=1, angle=None):
+    # Build filter string
+    filter_str = f"setupId~eq~'{BOARD_IDS[board]}'"
+
+    # Moon2024 requires Configuration filter for each angle
+    if board == "moon2024" and angle is not None:
+        if angle not in ANGLES_TO_IDS[board]:
+            raise ValueError(f"Invalid angle {angle} for board {board}. Valid angles: {list(ANGLES_TO_IDS[board].keys())}")
+        config_id = ANGLES_TO_IDS[board][angle]
+        filter_str += f"~and~Configuration~eq~'{config_id}'"
+
     response = session.post(
         f"{HOST}/Logbook/GetLogbook",
         data={
@@ -96,7 +107,7 @@ def logbook_pages(session, board, page_size=40, page=1):
             "page": page,
             "pageSize": page_size,
             "group": "",
-            "filter": f"setupId~eq~'{BOARD_IDS[board]}'",
+            "filter": filter_str,
         },
         headers={
             "X-Requested-With": "XMLHttpRequest",
@@ -106,10 +117,20 @@ def logbook_pages(session, board, page_size=40, page=1):
     response_json = response.json()
     yield from response_json["Data"]
     if response_json["Total"] > page_size * page:
-        yield from logbook_pages(session, board, page_size, page + 1)
+        yield from logbook_pages(session, board, page_size, page + 1, angle)
 
 
-def raw_logbook_entries_for_page(session, board, entry_id, page_size=30, page=1):
+def raw_logbook_entries_for_page(session, board, entry_id, page_size=30, page=1, angle=None):
+    # Build filter string
+    filter_str = f"setupId~eq~'{BOARD_IDS[board]}'"
+
+    # Moon2024 requires Configuration filter for each angle
+    if board == "moon2024" and angle is not None:
+        if angle not in ANGLES_TO_IDS[board]:
+            raise ValueError(f"Invalid angle {angle} for board {board}. Valid angles: {list(ANGLES_TO_IDS[board].keys())}")
+        config_id = ANGLES_TO_IDS[board][angle]
+        filter_str += f"~and~Configuration~eq~'{config_id}'"
+
     response = session.post(
         f"{HOST}/Logbook/GetLogbookEntries/{entry_id}",
         data={
@@ -117,7 +138,7 @@ def raw_logbook_entries_for_page(session, board, entry_id, page_size=30, page=1)
             "page": page,
             "pageSize": page_size,
             "group": "",
-            "filter": f"setupId~eq~'{BOARD_IDS[board]}'",
+            "filter": filter_str,
         },
         headers={"X-Requested-With": "XMLHttpRequest"},
     )
@@ -126,16 +147,29 @@ def raw_logbook_entries_for_page(session, board, entry_id, page_size=30, page=1)
     yield from response_json["Data"]
     if response_json["Total"] > page_size * page:
         yield from raw_logbook_entries_for_page(
-            session, board, entry_id, page_size, page + 1
+            session, board, entry_id, page_size, page + 1, angle
         )
 
 
 def raw_logbook_entries(session, board, logbook_page_size=40, entry_page_size=30):
-    logbook = logbook_pages(session, board, page_size=logbook_page_size)
-    for entry in logbook:
-        yield from raw_logbook_entries_for_page(
-            session, board, entry["Id"], page_size=entry_page_size
-        )
+    # Moon2024 requires querying each angle separately
+    if board == "moon2024":
+        angles = list(ANGLES_TO_IDS[board].keys())
+        for i, angle in enumerate(angles):
+            logbook = logbook_pages(session, board, page_size=logbook_page_size, angle=angle)
+            for entry in logbook:
+                yield from raw_logbook_entries_for_page(
+                    session, board, entry["Id"], page_size=entry_page_size, angle=angle
+                )
+            # Add delay between angles to prevent API throttling (except after last angle)
+            if i < len(angles) - 1:
+                time.sleep(0.5)
+    else:
+        logbook = logbook_pages(session, board, page_size=logbook_page_size)
+        for entry in logbook:
+            yield from raw_logbook_entries_for_page(
+                session, board, entry["Id"], page_size=entry_page_size
+            )
 
 
 def get_my_ranking(session, board, angle):
