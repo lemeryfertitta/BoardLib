@@ -52,7 +52,9 @@ IDS_TO_ANGLES = {
 
 def get_session(username, password):
     session = requests.Session()
-    
+    session.headers.update({
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+})
     login_page = session.get(f"{HOST}/account/login")
     login_page.raise_for_status()
     
