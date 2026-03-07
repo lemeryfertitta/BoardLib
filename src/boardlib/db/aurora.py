@@ -169,7 +169,30 @@ def get_climb_name(database, climb_uuid):
 
 def get_image_filenames(database):
     with sqlite3.connect(database) as connection:
-        results = connection.execute(
-            "SELECT image_filename FROM product_sizes_layouts_sets WHERE image_filename IS NOT NULL"
+        results = results = connection.execute(
+            """
+            SELECT image_filename FROM product_sizes_layouts_sets WHERE image_filename IS NOT NULL
+            """
         )
         return [row[0] for row in results]
+
+def get_layouts_images_dict(database):
+    with sqlite3.connect(database) as connection:
+        results = connection.execute(
+            """
+            SELECT
+                l.name layout_name,
+                s.name product_size_name,
+                p.image_filename
+            FROM product_sizes_layouts_sets p
+            INNER JOIN 
+                (SELECT id, name FROM layouts) AS l ON p.layout_id = l.id
+            INNER JOIN
+                (SELECT id, name FROM product_sizes) AS s ON p.product_size_id = s.id;
+            """
+        )
+
+        layouts_images_dict = collections.defaultdict(list)
+        for row in results:
+            layouts_images_dict[(row[0],row[1])].append(row[2])
+        return layouts_images_dict

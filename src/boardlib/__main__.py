@@ -27,6 +27,16 @@ LOGBOOK_FIELDS = (
     "comment",
 )
 
+AURORA_DATABASES = (
+    "aurora",
+    "decoy",
+    "grasshopper",
+    "kilter",
+    "soill",
+    "tension",
+    "touchstone",
+)
+
 
 def logbook_entries(board, username, password, database=None):
     api = (
@@ -130,6 +140,65 @@ def handle_logbook_command(args):
         )
 
 
+def handle_download_all_command(args):
+    output_dir = args.output_directory
+    output_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Downloading all Aurora databases and images to {output_dir}")
+
+    boards = AURORA_DATABASES
+    if args.boards:
+        boards = tuple(args.boards)
+
+    for board in boards:
+        db_path = output_dir / f"{board}.db"
+
+        # Download / sync the database
+        if not db_path.exists():
+            print(f"\n[{board}] Downloading database to {db_path}")
+            boardlib.db.aurora.download_database(board, db_path)
+        else:
+            print(f"\n[{board}] Database already exists at {db_path}, skipping download")
+
+        if args.username:
+            print(f"[{board}] Synchronizing database at {db_path}")
+            try:
+                token = get_aurora_login_token(board, args.username)
+                tables_and_sync_dates = boardlib.db.aurora.get_shared_syncs(db_path)
+                row_counts_totals = {}
+                for sync_result in boardlib.api.aurora.sync(
+                    board,
+                    tables_and_sync_dates,
+                    token=token,
+                    max_pages=args.max_sync_pages,
+                ):
+                    row_counts = boardlib.db.aurora.sync_shared_tables(
+                        db_path, sync_result
+                    )
+                    for table_name, row_count in row_counts.items():
+                        row_counts_totals[table_name] = (
+                            row_counts_totals.get(table_name, 0) + row_count
+                        )
+                        print(
+                            f"[{board}] Synchronized page of {table_name}. "
+                            f"Page size: {row_count}. Cumulative: {row_counts_totals[table_name]}"
+                        )
+            except Exception as e:
+                print(f"[{board}] Warning: sync failed: {e}")
+
+        # Download images
+        if not args.skip_images:
+            images_dir = output_dir / f"{board}-images"
+            images_dir.mkdir(parents=True, exist_ok=True)
+            print(f"[{board}] Downloading images to {images_dir}")
+            try:
+                boardlib.api.aurora.download_images(board, db_path, images_dir)
+                print(f"[{board}] Images downloaded successfully")
+            except Exception as e:
+                print(f"[{board}] Warning: image download failed: {e}")
+
+    print("\nDone.")
+
+
 def handle_images_command(args):
     print(f"Downloading images for {args.board} to {args.output_directory}")
     boardlib.api.aurora.download_images(args.board, args.database_path, args.output_directory)
@@ -216,12 +285,51 @@ def add_images_parser(subparsers):
     images_parser.set_defaults(func=handle_images_command)
 
 
+def add_download_all_parser(subparsers):
+    download_all_parser = subparsers.add_parser(
+        "download-all",
+        help="Download all Aurora databases and images into a single directory",
+    )
+    download_all_parser.add_argument(
+        "output_directory",
+        help="Directory to store all databases and image folders",
+        type=pathlib.Path,
+    )
+    download_all_parser.add_argument(
+        "-u", "--username",
+        help="Username. If provided, databases will be synchronized after download",
+        required=False,
+    )
+    download_all_parser.add_argument(
+        "-b", "--boards",
+        help="Specific boards to download (default: all Aurora databases)",
+        nargs="+",
+        choices=sorted(boardlib.api.aurora.HOST_BASES.keys()),
+        required=False,
+    )
+    download_all_parser.add_argument(
+        "-m",
+        "--max-sync-pages",
+        help="Maximum number of times to call the sync API per board. Defaults to 100.",
+        type=int,
+        default=boardlib.api.aurora.DEFAULT_MAX_SYNC_PAGES,
+    )
+    download_all_parser.add_argument(
+        "--skip-images",
+        help="Skip downloading images",
+        action="store_true",
+        required=False,
+    )
+    download_all_parser.set_defaults(func=handle_download_all_command)
+
+
 def main():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
     add_logbook_parser(subparsers)
     add_database_parser(subparsers)
     add_images_parser(subparsers)
+    add_download_all_parser(subparsers)
     args = parser.parse_args()
     args.func(args)
 
