@@ -201,7 +201,7 @@ def handle_download_all_command(args):
 
 def handle_images_command(args):
     print(f"Downloading images for {args.board} to {args.output_directory}")
-    boardlib.api.aurora.download_images(args.board, args.database_path, args.output_directory)
+    boardlib.api.aurora.download_images(args.board, args.database_path, args.output_directory, args.raw)
     print("Images downloaded successfully")
 
 
@@ -281,6 +281,12 @@ def add_images_parser(subparsers):
         "output_directory",
         help="Directory to save the downloaded images",
         type=pathlib.Path,
+    )
+    images_parser.add_argument(
+        "--raw",
+        action="store_true",
+        help="Just download the raw images. Don't build full layout images.",
+        required = False
     )
     images_parser.set_defaults(func=handle_images_command)
 

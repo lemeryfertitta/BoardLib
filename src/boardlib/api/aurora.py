@@ -169,7 +169,7 @@ def gym_boards(board):
         }
 
 
-def download_images(board, database_path, output_directory, full_layout_images=True):
+def download_images(board, database_path, output_directory, raw=False):
     """
     Download all images for a given board to the specified directory.
     
@@ -199,14 +199,16 @@ def download_images(board, database_path, output_directory, full_layout_images=T
         with open(output_path, "wb") as output_file:
             output_file.write(response.content)
 
-    if (full_layout_images):
-        # Get the layouts-image-path dict from the database
-        layouts_images_dict = boardlib.db.aurora.get_layouts_images_dict(database_path)
-
-        # Construct the images one at a time.
-        for (layout, product_size), image_names in layouts_images_dict.items():
-            image_path = os.path.join(output_directory, layout, f"{product_size}.png")
-            boardlib.util.images.overlay_images(output_directory, image_names, image_path)
+    if (raw):
+        return
+    
+    # Get the layouts-image-path dict from the database
+    layouts_images_dict = boardlib.db.aurora.get_layouts_images_dict(database_path)
+    
+    # Construct the images one at a time.
+    for (layout, product_size), image_names in layouts_images_dict.items():
+        image_path = os.path.join(output_directory, layout, f"{product_size}.png")
+        boardlib.util.images.overlay_images(output_directory, image_names, image_path)
 
 def generate_uuid():
     return str(uuid.uuid4()).replace("-", "")
