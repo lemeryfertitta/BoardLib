@@ -4,3 +4,4 @@
 tmp
 dist
 __pycache__/
+data_cache
