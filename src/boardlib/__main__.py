@@ -27,16 +27,6 @@ LOGBOOK_FIELDS = (
     "comment",
 )
 
-AURORA_DATABASES = (
-    "aurora",
-    "decoy",
-    "grasshopper",
-    "kilter",
-    "soill",
-    "tension",
-    "touchstone",
-)
-
 
 def logbook_entries(board, username, password, database=None):
     api = (
@@ -67,6 +57,7 @@ def get_password(board):
     if not password:
         password = getpass.getpass("Password: ")
     return password
+
 
 def get_aurora_login_token(board, username):
     password = get_password(board)
@@ -145,7 +136,7 @@ def handle_download_all_command(args):
     output_dir.mkdir(parents=True, exist_ok=True)
     print(f"Downloading all Aurora databases and images to {output_dir}")
 
-    boards = AURORA_DATABASES
+    boards = tuple(boardlib.api.aurora.HOST_BASES.keys())
     if args.boards:
         boards = tuple(args.boards)
 
@@ -283,9 +274,9 @@ def add_images_parser(subparsers):
         type=pathlib.Path,
     )
     images_parser.add_argument(
-        "--raw",
+        "--composite",
         action="store_true",
-        help="Just download the raw images. Don't build full layout images.",
+        help="Build composite layout images for each board layout.",
         required = False
     )
     images_parser.set_defaults(func=handle_images_command)

@@ -169,13 +169,14 @@ def gym_boards(board):
         }
 
 
-def download_images(board, database_path, output_directory, raw=False):
+def download_images(board, database_path, output_directory, composite=False):
     """
     Download all images for a given board to the specified directory.
     
     :param board: The board name
     :param database_path: Path to the SQLite database file
     :param output_directory: Directory to save the downloaded images
+    :param composite: Optionally build full composite layout images from hold sets.
     """    
     os.makedirs(output_directory, exist_ok=True)
     image_filenames = boardlib.db.aurora.get_image_filenames(database_path)
@@ -199,16 +200,14 @@ def download_images(board, database_path, output_directory, raw=False):
         with open(output_path, "wb") as output_file:
             output_file.write(response.content)
 
-    if (raw):
-        return
-    
-    # Get the layouts-image-path dict from the database
-    layouts_images_dict = boardlib.db.aurora.get_layouts_images_dict(database_path)
-    
-    # Construct the images one at a time.
-    for (layout, product_size), image_names in layouts_images_dict.items():
-        image_path = os.path.join(output_directory, layout, f"{product_size}.png")
-        boardlib.util.images.overlay_images(output_directory, image_names, image_path)
+    if (composite):  
+        # Get the layouts-image-path dict from the database
+        layouts_images_dict = boardlib.db.aurora.get_layouts_images_dict(database_path)
+        
+        # Construct the images one at a time.
+        for (layout, product_size), image_names in layouts_images_dict.items():
+            image_path = os.path.join(output_directory, layout, f"{product_size}.png")
+            boardlib.util.images.overlay_images(output_directory, image_names, image_path)
 
 def generate_uuid():
     return str(uuid.uuid4()).replace("-", "")
