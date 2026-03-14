@@ -182,7 +182,7 @@ def handle_download_all_command(args):
             images_dir.mkdir(parents=True, exist_ok=True)
             print(f"[{board}] Downloading images to {images_dir}")
             try:
-                boardlib.api.aurora.download_images(board, db_path, images_dir)
+                boardlib.api.aurora.download_images(board, db_path, images_dir, args.composite)
                 print(f"[{board}] Images downloaded successfully")
             except Exception as e:
                 print(f"[{board}] Warning: image download failed: {e}")
@@ -192,7 +192,7 @@ def handle_download_all_command(args):
 
 def handle_images_command(args):
     print(f"Downloading images for {args.board} to {args.output_directory}")
-    boardlib.api.aurora.download_images(args.board, args.database_path, args.output_directory, args.raw)
+    boardlib.api.aurora.download_images(args.board, args.database_path, args.output_directory, args.composite)
     print("Images downloaded successfully")
 
 
@@ -315,6 +315,12 @@ def add_download_all_parser(subparsers):
         "--skip-images",
         help="Skip downloading images",
         action="store_true",
+        required=False,
+    )
+    download_all_parser.add_argument(
+        "--composite",
+        action="store_true",
+        help="Build composite layout images for each board layout.",
         required=False,
     )
     download_all_parser.set_defaults(func=handle_download_all_command)

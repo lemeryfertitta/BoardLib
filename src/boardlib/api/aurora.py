@@ -176,8 +176,8 @@ def download_images(board, database_path, output_directory, composite=False):
     :param board: The board name
     :param database_path: Path to the SQLite database file
     :param output_directory: Directory to save the downloaded images
-    :param composite: Optionally build full composite layout images from hold sets.
-    """    
+    :param composite: If true, build composite layout images for each board layout
+    """
     os.makedirs(output_directory, exist_ok=True)
     image_filenames = boardlib.db.aurora.get_image_filenames(database_path)
     api_host = f"https://api.{HOST_BASES[board]}.com"
