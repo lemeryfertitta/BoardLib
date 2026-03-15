@@ -38,7 +38,9 @@ This outputs a CSV file with the following fields:
 
 #### Supported Boards 🛹
 
-Currently all [Aurora Climbing](https://auroraclimbing.com/) based boards (Kilter, Tension, etc.) and the [Moonboard](https://moonboard.com/). The Moonboard web API currently appears to be broken for some iterations of the board, including 2016 and 2024.
+Currently all [Aurora Climbing](https://auroraclimbing.com/) based boards (Kilter, Tension, etc.) and the [Moonboard](https://moonboard.com/).
+
+**Note on Moonboard 2024**: The Moonboard API for 2024 boards requires angle-specific queries (25° and 40°) and may return incomplete data. The API appears to have data inconsistencies between the Dashboard and Logbook endpoints. BoardLib now supports querying moon2024 with Configuration filters, but users may find that some climbs visible in the web Dashboard are not returned by the API.
 
 ### Images 📸
 
