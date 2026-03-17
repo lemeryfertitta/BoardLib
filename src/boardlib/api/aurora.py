@@ -6,6 +6,8 @@ import requests
 import pandas as pd
 
 import boardlib.db.aurora
+import boardlib.util.images
+
 
 BASE_SYNC_DATE = "1970-01-01 00:00:00.000000"
 DEFAULT_MAX_SYNC_PAGES = 100
@@ -167,14 +169,15 @@ def gym_boards(board):
         }
 
 
-def download_images(board, database_path, output_directory):
+def download_images(board, database_path, output_directory, composite=False):
     """
     Download all images for a given board to the specified directory.
     
     :param board: The board name
     :param database_path: Path to the SQLite database file
     :param output_directory: Directory to save the downloaded images
-    """    
+    :param composite: If true, build composite layout images for each board layout
+    """
     os.makedirs(output_directory, exist_ok=True)
     image_filenames = boardlib.db.aurora.get_image_filenames(database_path)
     api_host = f"https://api.{HOST_BASES[board]}.com"
@@ -197,6 +200,14 @@ def download_images(board, database_path, output_directory):
         with open(output_path, "wb") as output_file:
             output_file.write(response.content)
 
+    if (composite):  
+        # Get the layouts-image-path dict from the database
+        layouts_images_dict = boardlib.db.aurora.get_layouts_images_dict(database_path)
+        
+        # Construct the images one at a time.
+        for (layout, product_size), image_names in layouts_images_dict.items():
+            image_path = os.path.join(output_directory, layout, f"{product_size}.png")
+            boardlib.util.images.overlay_images(output_directory, image_names, image_path)
 
 def generate_uuid():
     return str(uuid.uuid4()).replace("-", "")
