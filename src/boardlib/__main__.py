@@ -6,6 +6,7 @@ import pathlib
 import sys
 
 import boardlib.api.aurora
+import boardlib.api.kilter
 import boardlib.api.moon
 import boardlib.db.aurora
 
@@ -29,6 +30,10 @@ LOGBOOK_FIELDS = (
 
 
 def logbook_entries(board, username, password, database=None):
+    if board == boardlib.api.kilter.BOARD:
+        yield from boardlib.api.kilter.logbook_entries(board, username, password)
+        return
+
     api = (
         boardlib.api.moon
         if board.startswith("moon")
@@ -103,6 +108,10 @@ def handle_database_command(args):
 def handle_logbook_command(args):
     if args.board.startswith("moon"):
         entries = boardlib.api.moon.logbook_entries(
+            args.board, args.username, get_password(args.board)
+        )
+    elif args.board == boardlib.api.kilter.BOARD:
+        entries = boardlib.api.kilter.logbook_entries(
             args.board, args.username, get_password(args.board)
         )
     else:
@@ -233,18 +242,22 @@ def add_logbook_parser(subparsers):
         "board",
         help="Board name",
         choices=sorted(
-            boardlib.api.moon.BOARD_IDS.keys() | boardlib.api.aurora.HOST_BASES.keys()
+            boardlib.api.moon.BOARD_IDS.keys()
+            | boardlib.api.aurora.HOST_BASES.keys()
+            | {boardlib.api.kilter.BOARD}
         ),
     )
     logbook_parser.add_argument(
         "-d", "--database-path",
         help=(
-            "Path for the database file. Run the 'database' command first to download the database. Required for Aurora-based boards."
+            "Path for the database file. Run the 'database' command first to download the database. Required for Aurora-based boards, not for kilter or the Moonboard."
         ),
         type=pathlib.Path,
         required=False,
     )
-    logbook_parser.add_argument("-u", "--username", help="Username", required=True)
+    logbook_parser.add_argument(
+        "-u", "--username", help="Username. For kilter, the email address of the Kilter account", required=True
+    )
     logbook_parser.add_argument("-o", "--output", help="Output file", required=False)
     logbook_parser.add_argument(
         "--no-headers", help="Don't write headers", action="store_true", required=False
