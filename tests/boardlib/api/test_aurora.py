@@ -91,56 +91,32 @@ class TestAurora(unittest.TestCase):
             boardlib.api.aurora.get_user("aurora", "test", "test")
 
     @unittest.mock.patch(
-        "requests.get",
-        side_effect=get_mock_request(json_data="test_get_climb_stats"),
-    )
-    def test_get_climb_stats(self, mock_get):
-        self.assertEqual(
-            boardlib.api.aurora.get_climb_stats("aurora", "test", "test", "test"),
-            "test_get_climb_stats",
-        )
-
-    @unittest.mock.patch(
-        "requests.get",
-        side_effect=get_mock_request(status_code=requests.codes.bad_request),
-    )
-    def test_get_climb_stats_failure(self, mock_get):
-        with self.assertRaises(requests.exceptions.HTTPError):
-            boardlib.api.aurora.get_climb_stats("aurora", "test", "test", "test")
-
-    @unittest.mock.patch(
-        "requests.get",
-        side_effect=get_mock_request(text="<h1>test_get_climb_name</h1>"),
-    )
-    def test_get_climb_name(self, mock_get):
-        self.assertEqual(
-            boardlib.api.aurora.get_climb_name("aurora", "test"), "test_get_climb_name"
-        )
-
-    @unittest.mock.patch(
-        "requests.get",
-        side_effect=get_mock_request(status_code=requests.codes.bad_request),
-    )
-    def test_get_climb_name_failure(self, mock_get):
-        with self.assertRaises(requests.exceptions.HTTPError):
-            boardlib.api.aurora.get_climb_name("aurora", "test")
-
-    @unittest.mock.patch(
         "requests.post",
-        side_effect=get_mock_request(json_data="test_sync"),
+        side_effect=lambda *args, **kwargs: MockResponse(
+            json_data={"climbs": [], "_complete": True}
+        ),
     )
-    def test_sync(self, mock_get):
+    def test_sync(self, mock_post):
         self.assertEqual(
-            boardlib.api.aurora.user_sync("aurora", "test", "test"), "test_sync"
+            list(
+                boardlib.api.aurora.sync(
+                    "aurora", {"climbs": boardlib.api.aurora.BASE_SYNC_DATE}, "test"
+                )
+            ),
+            [{"climbs": []}],
         )
 
     @unittest.mock.patch(
         "requests.post",
         side_effect=get_mock_request(status_code=requests.codes.bad_request),
     )
-    def test_sync_failure(self, mock_get):
+    def test_sync_failure(self, mock_post):
         with self.assertRaises(requests.exceptions.HTTPError):
-            boardlib.api.aurora.user_sync("aurora", "test", "test")
+            list(
+                boardlib.api.aurora.sync(
+                    "aurora", {"climbs": boardlib.api.aurora.BASE_SYNC_DATE}, "test"
+                )
+            )
 
     @unittest.mock.patch(
         "boardlib.api.aurora.get_gyms",
