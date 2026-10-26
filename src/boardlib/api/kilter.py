@@ -181,7 +181,8 @@ def log_to_entry(board, log, grade_names, tz=None):
         ),
         # The API has no benchmark or mirror information
         "is_benchmark": None,
-        "tries": max(attempts, 1) if is_ascent else attempts,
+        # A log is at least one try, even if the app recorded 0 attempts
+        "tries": max(attempts, 1),
         "is_mirror": None,
         "is_ascent": is_ascent,
         "comment": rating.get("comment"),
@@ -221,8 +222,9 @@ def process_logs(board, logs, grade_names, tz=None):
 
     Each log with a top is an ascent. The tries of logs without a top are added to the
     next ascent of the same climb at the same angle on the same day, like the attempts
-    of the Aurora boards. Logs without a top and without a later ascent that day are
-    summed into one entry with is_ascent False.
+    of the Aurora boards. Logs without a top after an ascent of the climb that day are
+    left out, as the climb was already sent. Other logs without a top are summed into
+    one entry with is_ascent False.
 
     :param grade_names: The grade names from get_grade_names.
     :param tz: The timezone for dates and days. Defaults to the local timezone.
@@ -234,13 +236,17 @@ def process_logs(board, logs, grade_names, tz=None):
 
     logbook = []
     attempts = {}
+    sent = set()
     for entry in entries:
         key = climb_key(entry) + (entry["date"].date(),)
         if entry["is_ascent"]:
             earlier_attempts = attempts.pop(key, None)
             if earlier_attempts:
                 entry["tries"] += earlier_attempts["tries"]
+            sent.add(key)
             logbook.append(entry)
+        elif key in sent:
+            continue
         elif key in attempts:
             attempts[key]["tries"] += entry["tries"]
         else:

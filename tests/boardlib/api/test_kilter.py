@@ -234,7 +234,7 @@ class TestKilter(unittest.TestCase):
         self.assertEqual(entry["tries_total"], 6)
 
     def test_process_logs_attempts_after_ascent(self):
-        ascent, attempts = process_logs(
+        (ascent,) = process_logs(
             make_log(),
             make_log(
                 attempts=2,
@@ -250,13 +250,26 @@ class TestKilter(unittest.TestCase):
             ),
         )
         self.assertEqual((ascent["is_ascent"], ascent["tries"]), (True, 1))
-        self.assertEqual(attempts["date"], datetime.datetime(2026, 4, 1, 18, 30))
+        self.assertEqual(ascent["tries_total"], 1)
+
+    def test_process_logs_attempts_after_ascent_other_day(self):
+        ascent, attempts = process_logs(
+            make_log(),
+            make_log(
+                attempts=2,
+                topped=False,
+                flashed=False,
+                createdAt="2026-04-08T18:30:00Z",
+            ),
+        )
+        self.assertEqual((ascent["is_ascent"], ascent["tries"]), (True, 1))
+        self.assertEqual(attempts["date"], datetime.datetime(2026, 4, 8, 18, 30))
         self.assertEqual(attempts["is_ascent"], False)
         self.assertEqual(attempts["logged_grade"], None)
         self.assertEqual(attempts["displayed_grade"], "6A+/V3")
-        self.assertEqual(attempts["tries"], 3)
-        self.assertEqual(attempts["tries_total"], 4)
-        self.assertEqual(attempts["sessions_count"], 1)
+        self.assertEqual(attempts["tries"], 2)
+        self.assertEqual(attempts["tries_total"], 3)
+        self.assertEqual(attempts["sessions_count"], 2)
         self.assertTrue(attempts["is_repeat"])
 
     def test_process_logs_sessions(self):
@@ -330,7 +343,7 @@ class TestKilter(unittest.TestCase):
                 createdAt="2026-04-01T18:30:00Z",
             ),
         )
-        self.assertEqual((attempt["is_ascent"], attempt["tries"]), (False, 0))
+        self.assertEqual((attempt["is_ascent"], attempt["tries"]), (False, 1))
         self.assertEqual((ascent["is_ascent"], ascent["tries"]), (True, 1))
 
     def test_process_logs_empty(self):

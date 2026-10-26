@@ -62,8 +62,9 @@ In March 2026, Kilter left Aurora Climbing for a new app and shut down the old A
 
   `boardlib logbook kilter --username=<kilter_account_email> --output=<output_file_name>`
 
+- Until this is released on PyPI, install it from this branch: `python3 -m pip install git+https://github.com/nat-e/BoardLib@kilter-new-app`
 - The new app only has the logs made with it, from late March 2026 on.
-- The new API has no benchmark or mirror information, so `is_benchmark` and `is_mirror` are empty. `logged_grade` and `comment` come from your rating of the climb at that angle, if you rated it. Dates are in your computer's timezone.
+- The new API has no benchmark or mirror information, so `is_benchmark` and `is_mirror` are empty. `logged_grade` and `comment` come from your rating of the climb at that angle, if you rated it. Failed tries logged after a send of the same climb and angle on the same day are left out. Dates are in your computer's timezone.
 - `boardlib database kilter` can still download the database bundled with the last Aurora-based Kilter app (climbs up to January 2026, with the same climb UUIDs as the new app), but it can no longer be synchronized, and `boardlib images kilter` no longer works.
 
 ## Bugs 🐞 and Feature Requests 🗒️
