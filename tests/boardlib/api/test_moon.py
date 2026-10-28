@@ -192,11 +192,14 @@ class TestMoon(unittest.TestCase):
                         {
                             "Problem": {
                                 "UserGrade": "7A",
+                                "Grade": "6C+",
+                                "IsBenchmark": True,
                                 "MoonBoardConfiguration": {"Id": 3},
                                 "Name": "test_name",
                             },
                             "DateClimbedAsString": "05 Sep 2023",
                             "NumberOfTries": "Flashed",
+                            "Comment": "test_comment",
                         }
                     ],
                     "Total": 1,
@@ -209,12 +212,15 @@ class TestMoon(unittest.TestCase):
             next(boardlib.api.moon.logbook_entries("moon2016", "username", "password")),
             {
                 "board": "moon2016",
-                "grade": "7A",
                 "angle": 40,
-                "name": "test_name",
+                "climb_name": "test_name",
                 "date": "2023-09-05",
+                "displayed_grade": "6C+",
+                "logged_grade": "7A",
+                "is_benchmark": True,
                 "tries": "1",
                 "is_mirror": False,
+                "comment": "test_comment",
             },
         )
 
